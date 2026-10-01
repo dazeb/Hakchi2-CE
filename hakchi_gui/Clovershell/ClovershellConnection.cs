@@ -23,15 +23,20 @@ namespace com.clusterrr.clovershell
         UsbEndpointWriter epWriter = null;
         Thread mainThread = null;
         Thread shellListenerThread = null;
-        bool online = false;
+        TcpListener shellListener;
+        public string LastError { get; private set; }
+        volatile bool online = false;
         ushort shellPort = 1023;
         Queue<ShellConnection> pendingShellConnections = new Queue<ShellConnection>();
         List<ExecConnection> pendingExecConnections = new List<ExecConnection>();
         internal ShellConnection[] shellConnections = new ShellConnection[256];
         internal ExecConnection[] execConnections = new ExecConnection[256];
-        bool enabled = false;
+        volatile bool enabled = false;
         bool autoreconnect = false;
         byte[] lastPingResponse = null;
+#if HAKCHI_CLI
+        byte[] pendingData = new byte[0];
+#endif
         DateTime lastAliveTime;
         public event OnConnectedEventHandler OnConnected = delegate { }; //public delegate void OnClovershellConnected();
         public event OnDisconnectedEventHandler OnDisconnected = delegate { }; //public delegate void OnClovershellDisconnected();
@@ -69,14 +74,18 @@ namespace com.clusterrr.clovershell
                 enabled = value;
                 if (value)
                 {
-                    mainThread = new Thread(mainThreadLoop);
+                    mainThread = new Thread(mainThreadLoop) { IsBackground = true };
                     mainThread.Start();
                 }
                 else
                 {
-                    #warning Refactor this to get rid of Thread.Abort!
-                    if (mainThread != null)
-                        mainThread.Abort();
+#if HAKCHI_CLI
+                    online = false;
+                    if (mainThread != null && mainThread != Thread.CurrentThread && !mainThread.Join(3000))
+                        throw new ClovershellException("USB worker did not stop in time");
+#else
+                    if (mainThread != null) mainThread.Abort();
+#endif
                     mainThread = null;
                     online = false;
                     if (device != null)
@@ -111,7 +120,7 @@ namespace com.clusterrr.clovershell
                 }
             }
         }
-        bool shellEnabled = false;
+        volatile bool shellEnabled = false;
         public bool ShellEnabled
         {
             get { return shellEnabled; }
@@ -120,16 +129,22 @@ namespace com.clusterrr.clovershell
                 if (shellEnabled == value) return;
                 if (value)
                 {
-                    var server = new TcpListener(IPAddress.Any, shellPort);
+                    shellEnabled = true;
+                    var server = shellListener = new TcpListener(IPAddress.Any, shellPort);
                     Trace.WriteLine(string.Format("Listening port {0}", shellPort));
                     server.Start();
-                    shellListenerThread = new Thread(shellListenerThreadLoop);
+                    shellListenerThread = new Thread(shellListenerThreadLoop) { IsBackground = true };
                     shellListenerThread.Start(server);
                 }
                 else
                 {
-                    #warning Refactor this to get rid of Thread.Abort!
+#if HAKCHI_CLI
+                    shellEnabled = false;
+                    shellListener?.Stop();
+                    if (shellListenerThread != Thread.CurrentThread) shellListenerThread?.Join(1000);
+#else
                     shellListenerThread.Abort();
+#endif
                     shellListenerThread = null;
                 }
                 for (var i = 0; i < shellConnections.Length; i++)
@@ -260,7 +275,7 @@ namespace com.clusterrr.clovershell
                             lastAliveTime = DateTime.Now;
                             online = true;
                             OnConnected(this);
-                            while (device.UsbRegistryInfo.IsAlive)
+                            while (enabled && device.UsbRegistryInfo.IsAlive)
                             {
                                 Thread.Sleep(100);
                                 if ((IdleTime.TotalSeconds >= 10) && (Ping() < 0))
@@ -272,8 +287,9 @@ namespace com.clusterrr.clovershell
                         {
                             return;
                         }
-                        catch (ClovershellException ex)
+                        catch (Exception ex)
                         {
+                            LastError = ex.Message;
                             Trace.WriteLine(ex.Message + ex.StackTrace);
                             break;
                         }
@@ -295,7 +311,7 @@ namespace com.clusterrr.clovershell
                         epWriter.Dispose();
                     epWriter = null;
                     if (!autoreconnect) Enabled = false;
-                    Thread.Sleep(1000);
+                    if (enabled) Thread.Sleep(1000);
                 }
             }
             catch (ThreadAbortException)
@@ -334,6 +350,9 @@ namespace com.clusterrr.clovershell
 #if VERY_DEBUG
             Debug.WriteLine("<-[CLV] " + BitConverter.ToString(e.Buffer, 0, e.Count));
 #endif
+#if HAKCHI_CLI
+            ReceiveBytes(e.Buffer, e.Count);
+#else
             int pos = 0;
             int count = e.Count;
             while (count > 0)
@@ -345,7 +364,28 @@ namespace com.clusterrr.clovershell
                 count -= len + 4;
                 pos += len + 4;
             }
+#endif
         }
+
+#if HAKCHI_CLI
+        // USB reads can split a protocol packet or combine several packets.
+        internal void ReceiveBytes(byte[] bytes, int count)
+        {
+            var data = new byte[pendingData.Length + count];
+            Array.Copy(pendingData, data, pendingData.Length);
+            Array.Copy(bytes, 0, data, pendingData.Length, count);
+            int pos = 0;
+            while (data.Length - pos >= 4)
+            {
+                int length = data[pos + 2] | data[pos + 3] << 8;
+                if (data.Length - pos < length + 4) break;
+                proceedPacket((ClovershellCommand)data[pos], data[pos + 1], data, pos + 4, length);
+                pos += length + 4;
+            }
+            pendingData = new byte[data.Length - pos];
+            Array.Copy(data, pos, pendingData, 0, pendingData.Length);
+        }
+#endif
 
         void proceedPacket(ClovershellCommand cmd, byte arg, byte[] data, int pos, int len)
         {
@@ -429,7 +469,7 @@ namespace com.clusterrr.clovershell
                 pos = 0;
                 len += 4;
                 int repeats = 0;
-                while (pos < len)
+                while (len > 0)
                 {
                     var res = epWriter.Write(buff, pos, len, 1000, out tLen);
 #if VERY_DEBUG
@@ -455,9 +495,10 @@ namespace com.clusterrr.clovershell
             var server = o as TcpListener;
             try
             {
-                while (true)
+                while (shellEnabled)
                 {
-                    while (!server.Pending()) Thread.Sleep(100);
+                    while (shellEnabled && !server.Pending()) Thread.Sleep(100);
+                    if (!shellEnabled) break;
                     var connection = new ShellConnection(this, server.AcceptSocket());
                     Trace.WriteLine("Shell client connected");
                     try
@@ -495,6 +536,8 @@ namespace com.clusterrr.clovershell
             {
                 Trace.WriteLine(ex.Message + ex.StackTrace);
             }
+            catch (SocketException) when (!shellEnabled) { }
+            catch (ObjectDisposedException) when (!shellEnabled) { }
             finally
             {
                 server.Stop();
@@ -511,7 +554,7 @@ namespace com.clusterrr.clovershell
                 connection.id = arg;
                 shellConnections[connection.id] = connection;
                 //Trace.WriteLine(string.Format("Shell started, id={0}", connection.id));
-                connection.shellConnectionThread = new Thread(connection.shellConnectionLoop);
+                connection.shellConnectionThread = new Thread(connection.shellConnectionLoop) { IsBackground = true };
                 connection.shellConnectionThread.Start();
             }
             catch (ClovershellException ex)
@@ -531,9 +574,12 @@ namespace com.clusterrr.clovershell
                 execConnections[arg] = connection;
                 if (connection.stdin != null)
                 {
-                    connection.stdinThread = new Thread(connection.stdinLoop);
+                    connection.stdinThread = new Thread(connection.stdinLoop) { IsBackground = true };
                     connection.stdinThread.Start();
                 }
+#if HAKCHI_CLI
+                else writeUsb(ClovershellCommand.CMD_EXEC_STDIN, (byte)arg); // no stdin: EOF
+#endif
             }
             catch (ClovershellException ex)
             {
@@ -654,6 +700,7 @@ namespace com.clusterrr.clovershell
                 stderr = new MemoryStream();
             using (var c = new ExecConnection(this, command, stdin, stdout, stderr))
             {
+                var started = DateTime.UtcNow;
                 try
                 {
                     pendingExecConnections.Add(c);
@@ -671,7 +718,12 @@ namespace com.clusterrr.clovershell
                         Thread.Sleep(50);
                         if (!IsOnline)
                             throw new ClovershellDisconnectedException("device goes offline");
+#if HAKCHI_CLI
+                        if (c.InputError != null) throw new IOException("USB input failed", c.InputError);
+                        if (!c.finished && timeout > 0 && (DateTime.UtcNow - started).TotalMilliseconds > timeout)
+#else
                         if (!c.finished && timeout > 0 && (DateTime.Now - c.LastDataTime).TotalMilliseconds > timeout)
+#endif
                             throw new ClovershellException("clovershell read timeout");
                     }
                     if (throwOnNonZero && c.result != 0)
@@ -688,8 +740,15 @@ namespace com.clusterrr.clovershell
                 }
                 finally
                 {
+                    pendingExecConnections.Remove(c);
                     if (c.id >= 0)
+                    {
+#if HAKCHI_CLI
+                        if (!c.finished && IsOnline)
+                            try { writeUsb(ClovershellCommand.CMD_EXEC_KILL, (byte)c.id); } catch { }
+#endif
                         execConnections[c.id] = null;
+                    }
                 }
             }
         }

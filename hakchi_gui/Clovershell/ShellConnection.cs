@@ -77,9 +77,9 @@ namespace com.clusterrr.clovershell
                         break;
                 }
             }
-            catch (ThreadAbortException)
-            {
-            }
+            catch (ThreadAbortException) { }
+            catch (ObjectDisposedException) { }
+            catch (SocketException) { }
             catch (Exception ex)
             {
                 Trace.WriteLine(ex.Message + ex.StackTrace);
@@ -98,9 +98,9 @@ namespace com.clusterrr.clovershell
 
         public void Dispose()
         {
-            #warning Refactor this to get rid of Thread.Abort!
-            if (shellConnectionThread != null)
-                shellConnectionThread.Abort();
+#if !HAKCHI_CLI
+            if (shellConnectionThread != null) shellConnectionThread.Abort();
+#endif
             if (socket != null)
                 socket.Close();
             socket = null;
