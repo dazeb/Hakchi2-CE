@@ -8,9 +8,42 @@ remains in this repository; the Linux entry point is `hakchi_cli/`.
 building, connecting, games, modules, backups, recovery and troubleshooting.
 The [original Windows documentation](hakchi_gui/README.md) describes the GUI.
 
-For a single-file Linux package, build the [experimental CLI AppImage](hakchi_cli/README.md#appimage):
-`bash hakchi_cli/appimage.sh`. It includes .NET, USB libraries and the CLI payloads.
-Run it from a terminal with `./hakchi-linux-x64.AppImage --help`.
+## Download and run on Linux
+
+The [experimental Linux CLI v0.1.0 release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-cli-v0.1.0)
+provides a single-file **x86-64 AppImage**, its SHA-256 checksum and a source archive
+including the FEL submodule. The AppImage includes .NET, USB libraries, CLI payloads,
+the setup guide and license notices. It is a terminal application.
+
+Download and verify it before running:
+
+```sh
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-cli-v0.1.0/hakchi-linux-x64.AppImage
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-cli-v0.1.0/hakchi-linux-x64.AppImage.sha256
+sha256sum -c hakchi-linux-x64.AppImage.sha256
+chmod +x hakchi-linux-x64.AppImage
+./hakchi-linux-x64.AppImage --help
+```
+
+The release is built on Debian 12. Use a supported glibc-based Linux distribution
+with the standard .NET native dependencies (including ICU and OpenSSL); SSH commands
+also need OpenSSH. If FUSE is unavailable, run
+`./hakchi-linux-x64.AppImage --appimage-extract-and-run --help`.
+For USB permissions, connection setup and build instructions, see the
+[AppImage guide](hakchi_cli/README.md#appimage).
+
+## Recent changes
+
+- Added a native .NET 10 Linux CLI for game preparation and sync, modules, file
+  transfers, stored backups, SSH/USB shell access and low-level FEL recovery.
+- Added clovershell packet buffering and CLI cancellation, timeout and exit handling.
+- Added AppImage packaging with bundled native USB libraries, udev rule output,
+  license notices and checksum-verified packaging tools.
+- Added CLI regressions, USB protocol checks and AppImage relocation/native-library
+  checks, plus a Linux packaging workflow in GitHub Actions.
+
+The Linux port and packaging are merged into this fork's `mainline` branch. The
+Windows GUI and its original documentation remain available separately.
 
 ## Why a Linux port is possible
 
@@ -51,11 +84,10 @@ does not describe the Linux CLI's capabilities.
 ## Quick start from source
 
 Install Git, `libusb-1.0`, OpenSSH and the .NET 10 SDK first. See the
-[requirements](hakchi_cli/README.md#requirements). These commands explicitly select
-the branch containing the Linux port:
+[requirements](hakchi_cli/README.md#requirements). Clone this fork's `mainline` branch:
 
 ```sh
-git clone --branch t3code/assess-linux-port https://github.com/dazeb/Hakchi2-CE.git
+git clone --branch mainline https://github.com/dazeb/Hakchi2-CE.git
 cd Hakchi2-CE
 git submodule update --init Libraries/FelLib
 bash hakchi_cli/publish.sh
@@ -85,8 +117,9 @@ source is unchanged; CLI-specific shared-shell behavior uses conditional compila
 
 See [implementation details](hakchi_cli/README.md#how-the-cli-works) and
 [verification](hakchi_cli/README.md#verification-and-contributing) before changing it.
-Generated packages are local build outputs; pushing this source branch does not
-publish downloadable release assets.
+Local build outputs are ignored by Git. Downloadable packages are published on this
+fork's [Releases page](https://github.com/dazeb/Hakchi2-CE/releases); the Linux
+packaging workflow also provides AppImage/checksum artifacts for its checked builds.
 
 ## Credits and license
 

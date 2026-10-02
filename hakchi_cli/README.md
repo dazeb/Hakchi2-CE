@@ -19,6 +19,7 @@ storage expansion and factory reset are not automated.
 
 - [Requirements](#requirements)
 - [Build or use a package](#build-or-use-a-package)
+- [AppImage](#appimage)
 - [Choose a connection](#choose-a-connection)
 - [First-use workflow](#first-use-workflow)
 - [Command reference](#command-reference)
@@ -69,6 +70,17 @@ every native operating-system dependency.
 ## Build or use a package
 
 ### AppImage
+
+Download the x86-64 AppImage and checksum from the
+[experimental Linux CLI v0.1.0 release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-cli-v0.1.0).
+It is built on Debian 12 and includes a matching source archive with the FEL submodule.
+ARM64 remains an unvalidated build target; this release provides x86-64 only.
+
+```sh
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-cli-v0.1.0/hakchi-linux-x64.AppImage
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-cli-v0.1.0/hakchi-linux-x64.AppImage.sha256
+sha256sum -c hakchi-linux-x64.AppImage.sha256
+```
 
 The experimental AppImage keeps the CLI, .NET runtime, `libusb-1.0`, `libudev`,
 payloads, USB permissions rule, documentation and license notices in one file.
@@ -142,11 +154,11 @@ replace real NES/SNES Classic validation.
 
 ### Build from source
 
-The Linux port is on `t3code/assess-linux-port`; cloning only the upstream/default
-branch will not select it.
+The Linux port and AppImage packaging are merged into `mainline` in the
+`dazeb/Hakchi2-CE` fork. Select this fork rather than the Team Shinkansen upstream:
 
 ```sh
-git clone --branch t3code/assess-linux-port https://github.com/dazeb/Hakchi2-CE.git
+git clone --branch mainline https://github.com/dazeb/Hakchi2-CE.git
 cd Hakchi2-CE
 git submodule update --init Libraries/FelLib
 bash hakchi_cli/publish.sh
