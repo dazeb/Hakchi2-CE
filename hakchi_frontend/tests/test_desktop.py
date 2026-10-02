@@ -108,8 +108,39 @@ with tempfile.TemporaryDirectory(prefix='hakchi desktop ') as temporary:
             if options.screenshots:
                 command('import', '-window', picker, str(Path(options.screenshots) / 'desktop-file-picker.png'), env=env)
             command('xdotool', 'windowfocus', '--sync', picker, env=env)
-            keys('Escape')
-            print('PASS: Add games opens a real file picker', flush=True)
+            rom = root / 'Third test game.nes'
+            rom.write_bytes(b'NES\x1a' + bytes(12) + bytes([3]) * 32768)
+            geometry = dict(line.split('=', 1) for line in command('xdotool', 'getwindowgeometry', '--shell', picker, env=env).splitlines())
+            width, height = int(geometry['WIDTH']), int(geometry['HEIGHT'])
+            command('xdotool', 'mousemove', '--window', picker, '400', '22', 'click', '1', env=env)
+            keys('ctrl+a')
+            command('xdotool', 'type', '--clearmodifiers', str(root), env=env)
+            keys('Return')
+            time.sleep(0.5)
+            # This isolated folder has two folders and three ROMs. Select the
+            # third ROM in the pinned managed picker's 24px rows.
+            command('xdotool', 'mousemove', '--window', picker, '250', '180', 'click', '1', env=env)
+            time.sleep(0.4)
+            if options.screenshots:
+                command('import', '-window', picker, str(Path(options.screenshots) / 'desktop-file-selected.png'), env=env)
+            command('xdotool', 'mousemove', '--window', picker, str(width - 132), str(height - 27), 'click', '1', env=env)
+            dialog = None
+            for _ in range(50):
+                found = subprocess.run(['xdotool', 'search', '--onlyvisible', '--name', '^Add games$'], env=env, capture_output=True, text=True)
+                if found.returncode == 0:
+                    dialog = found.stdout.splitlines()[0]
+                    break
+                time.sleep(0.1)
+            assert dialog is not None, 'ROM selection did not open the import settings dialog'
+            time.sleep(0.4)
+            geometry = dict(line.split('=', 1) for line in command('xdotool', 'getwindowgeometry', '--shell', dialog, env=env).splitlines())
+            command('xdotool', 'mousemove', '--window', dialog, str(int(geometry['WIDTH']) - 90), str(int(geometry['HEIGHT']) - 42), 'click', '1', env=env)
+            command('xdotool', 'windowfocus', '--sync', window, env=env)
+            wait_for('Third test game')
+            listing = command(str(binary), 'game-list', str(library), env=env)
+            assert len(listing.strip().splitlines()) == 3, 'The graphical import did not add a game to the library'
+            screenshot('desktop-imported')
+            print('PASS: graphical ROM selection, import settings, backend import and library refresh', flush=True)
         finally:
             process.terminate()
             try: process.wait(timeout=10)

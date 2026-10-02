@@ -112,7 +112,8 @@ APPIMAGE_EXTRACT_AND_RUN=1 xvfb-run -a python3 hakchi_frontend/tests/test_deskto
 
 The desktop smoke test uses Xvfb, xdotool, xclip and ImageMagick. It starts the default
 AppImage entry point, reads a prepared library through the real CLI, exercises
-search/refresh and invalid-location recovery, and saves screenshots when requested.
+search/refresh and invalid-location recovery, imports a ROM through the file picker
+and settings dialog, and saves screenshots when requested.
 
 This remains experimental. Real console transfers, firmware/menu behavior, recovery
 boots and flashing need hardware validation. ARM64 is an unvalidated build target.
