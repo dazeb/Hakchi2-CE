@@ -1,0 +1,2 @@
+# FEL and legacy clovershell USB access for the active local desktop user.
+SUBSYSTEM=="usb", ATTR{idVendor}=="1f3a", ATTR{idProduct}=="efe8", TAG+="uaccess"

@@ -15,7 +15,9 @@ namespace com.clusterrr.clovershell
         internal Stream stdout;
         internal Stream stderr;
         internal int id;
-        internal bool finished;
+        internal volatile bool finished;
+        private volatile bool stopped;
+        internal Exception InputError;
         internal int result;
         internal bool stdinFinished;
         internal bool stdoutFinished;
@@ -49,9 +51,10 @@ namespace com.clusterrr.clovershell
                     stdin.Seek(0, SeekOrigin.Begin);
                 var buffer = new byte[8 * 1024];
                 int l;
-                while (connection.IsOnline)
+                while (!stopped && !finished && connection.IsOnline)
                 {
                     l = stdin.Read(buffer, 0, buffer.Length);
+                    if (stopped || finished || !connection.IsOnline) break;
                     if (l > 0)
                         connection.writeUsb(ClovershellConnection.ClovershellCommand.CMD_EXEC_STDIN, (byte)id, buffer, 0, l);
                     else
@@ -59,9 +62,10 @@ namespace com.clusterrr.clovershell
                     LastDataTime = DateTime.Now;
                     if (stdinQueue > 32 * 1024 && connection.IsOnline)
                     {
-                        Trace.WriteLine(string.Format("queue: {0} / {1}, {2}MB / {3}MB ({4}%)",
-                            stdinQueue, stdinPipeSize, stdin.Position / 1024 / 1024, stdin.Length / 1024 / 1024, stdin.Length == 0 ? 100 : (100 * stdin.Position / stdin.Length)));
-                        while (stdinQueue > 16 * 1024)
+                        if (stdin.CanSeek)
+                            Trace.WriteLine(string.Format("queue: {0} / {1}, {2}MB / {3}MB ({4}%)",
+                                stdinQueue, stdinPipeSize, stdin.Position / 1024 / 1024, stdin.Length / 1024 / 1024, stdin.Length == 0 ? 100 : (100 * stdin.Position / stdin.Length)));
+                        while (!stopped && !finished && connection.IsOnline && stdinQueue > 16 * 1024)
                         {
                             Thread.Sleep(50);
                             connection.writeUsb(ClovershellConnection.ClovershellCommand.CMD_EXEC_STDIN_FLOW_STAT_REQ, (byte)id);
@@ -81,6 +85,7 @@ namespace com.clusterrr.clovershell
             {
                 Trace.WriteLine("stdin error: " + ex.Message + ex.StackTrace);
             }
+            catch (Exception ex) { InputError = ex; }
             finally
             {
                 stdinThread = null;
@@ -89,9 +94,12 @@ namespace com.clusterrr.clovershell
 
         public void Dispose()
         {
-            #warning Refactor this to get rid of Thread.Abort!
-            if (stdinThread != null)
-                stdinThread.Abort();            
+#if HAKCHI_CLI
+            stopped = true;
+            if (stdinThread != Thread.CurrentThread) stdinThread?.Join(100);
+#else
+            if (stdinThread != null) stdinThread.Abort();
+#endif
         }
     }
 
