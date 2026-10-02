@@ -212,11 +212,26 @@ os.execv('/bin/mv', ['mv'] + sys.argv[1:])
     def test_command_timeout_and_cancellation(self):
         result = self.call('--host', 'fixture', '--timeout', '1', 'exec', 'exec sleep 30', code=1)
         self.assertIn(b'timed out', result.stderr)
-        process = subprocess.Popen([*runner, '--host', 'fixture', 'exec', 'exec sleep 30'], env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(0.5)
-        process.send_signal(signal.SIGINT)
-        _, error = process.communicate(timeout=8)
-        self.assertEqual(process.returncode, 130, error)
+        commands = self.root / 'commands'
+        previous_size = commands.stat().st_size
+        process = subprocess.Popen([*runner, '--host', 'fixture', 'exec', 'exec sleep 30'], env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+        try:
+            deadline = time.monotonic() + 10
+            while commands.stat().st_size == previous_size and time.monotonic() < deadline:
+                time.sleep(0.05)
+            self.assertGreater(commands.stat().st_size, previous_size, 'Remote command did not start')
+            # A terminal's Ctrl-C signals the whole foreground process group,
+            # including an AppImage extract-and-run helper and its CLI child.
+            os.killpg(process.pid, signal.SIGINT)
+            _, error = process.communicate(timeout=8)
+        finally:
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.communicate()
+        # The CLI returns 130; an extract-and-run helper can itself receive SIGINT.
+        # Both become status 130 in a terminal shell. Require child cancellation too.
+        self.assertIn(process.returncode, (130, -signal.SIGINT), error)
+        self.assertIn(b'Cancelled.', error)
 
 
 if __name__ == '__main__':

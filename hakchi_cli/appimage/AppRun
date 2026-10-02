@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+appdir=${APPDIR:-$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)}
+if [ "$#" -eq 1 ] && [ "$1" = "--print-udev-rules" ]; then
+    cat "$appdir/usr/lib/hakchi/70-hakchi.rules"
+    exit 0
+fi
+export LD_LIBRARY_PATH="$appdir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# Keep the caller's working directory, streams, signals and exit status.
+exec "$appdir/usr/lib/hakchi/hakchi" "$@"

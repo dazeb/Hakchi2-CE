@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Hakchi Linux CLI (Experimental)
+Comment=Manage NES/SNES Classic consoles from a terminal
+Exec=AppRun
+Icon=hakchi
+Terminal=true
+Categories=Utility;

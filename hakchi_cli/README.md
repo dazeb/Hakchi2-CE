@@ -68,6 +68,78 @@ every native operating-system dependency.
 
 ## Build or use a package
 
+### AppImage
+
+The experimental AppImage keeps the CLI, .NET runtime, `libusb-1.0`, `libudev`,
+payloads, USB permissions rule, documentation and license notices in one file.
+No .NET installation or separate libusb package is needed to run it. It is still
+a terminal application; commands and hardware limitations are unchanged.
+
+With `hakchi-linux-x64.AppImage` in your current directory:
+
+```sh
+chmod +x hakchi-linux-x64.AppImage
+./hakchi-linux-x64.AppImage --help
+./hakchi-linux-x64.AppImage game-add ./game.nes ./games --core fceumm --name 'My Game'
+./hakchi-linux-x64.AppImage game-list ./games
+./hakchi-linux-x64.AppImage devices
+./hakchi-linux-x64.AppImage --host 192.168.1.100 status
+```
+
+Relative paths resolve from your current directory. Move or rename the AppImage
+freely; keep your ROMs, game library and backups outside the bundle. SSH commands
+still require the host's OpenSSH client. Standard .NET native dependencies such as
+glibc, ICU and OpenSSL remain host requirements. Use a supported glibc-based Linux
+distribution; Alpine/musl is not supported.
+
+USB access still needs udev permissions. You can print the bundled rule without
+extracting the package, then install it and reconnect the console:
+
+```sh
+./hakchi-linux-x64.AppImage --print-udev-rules > 70-hakchi.rules
+sudo install -m 644 70-hakchi.rules /etc/udev/rules.d/70-hakchi.rules
+sudo udevadm control --reload-rules
+```
+
+If FUSE mounting is unavailable, the bundled AppImage runtime supports extraction
+and execution without FUSE ([AppImage documentation](https://docs.appimage.org/user-guide/troubleshooting/fuse.html)):
+
+```sh
+./hakchi-linux-x64.AppImage --appimage-extract-and-run --help
+# Or enable that mode for multiple commands:
+export APPIMAGE_EXTRACT_AND_RUN=1
+./hakchi-linux-x64.AppImage devices
+```
+
+Build from a checkout containing `hakchi_cli/appimage.sh`, with the .NET 10 SDK
+and initialized `Libraries/FelLib` submodule. On Debian/Ubuntu:
+
+```sh
+sudo apt install libusb-1.0-0 libudev1 desktop-file-utils curl python3 file
+bash hakchi_cli/appimage.sh
+# For an SDK outside PATH:
+DOTNET=/path/to/dotnet bash hakchi_cli/appimage.sh
+```
+
+Output: `hakchi_cli/bin/appimage/hakchi-linux-x64.AppImage` and its `.sha256` file.
+Check the checksum from that directory with
+`sha256sum -c hakchi-linux-x64.AppImage.sha256`.
+The script downloads SHA-256-checked appimagetool 1.9.1 and AppImage runtime 20251108
+from their official GitHub releases; building also needs NuGet access. FUSE and
+root access are not required by the packaging script itself.
+
+Build on Ubuntu 22.04 or Debian 12 for older native USB dependencies. Building on
+a newer distro can raise the minimum host requirements. Native x86-64 and ARM64
+builders select their corresponding target automatically; cross-packaging is not
+supported. ARM64 packaging has not been validated on an ARM64 host.
+
+The `Experimental Linux CLI AppImage` GitHub Actions workflow builds x64 on Ubuntu
+22.04, runs software checks and uploads the AppImage/checksum as a workflow artifact.
+It does not publish a release. Local build outputs are ignored by Git. When sharing
+a binary, also provide its matching source and submodule revisions under the existing
+licenses. AppImage packaging does not automate first-time firmware installation or
+replace real NES/SNES Classic validation.
+
 ### Build from source
 
 The Linux port is on `t3code/assess-linux-port`; cloning only the upstream/default
@@ -535,6 +607,20 @@ python3 hakchi_cli/tests/test_cli.py --binary hakchi_cli/bin/publish/linux-x64/h
 dotnet run --project hakchi_cli/tests/ProtocolTests.csproj -c Release
 git diff --check
 ```
+
+After building an AppImage, run the same CLI suite against the bundle, plus the
+packaging checks. Extraction mode also works in CI without FUSE:
+
+```sh
+APPIMAGE_EXTRACT_AND_RUN=1 python3 hakchi_cli/tests/test_cli.py \
+  --binary hakchi_cli/bin/appimage/hakchi-linux-x64.AppImage
+APPIMAGE_EXTRACT_AND_RUN=1 python3 hakchi_cli/tests/test_appimage.py \
+  --binary hakchi_cli/bin/appimage/hakchi-linux-x64.AppImage
+```
+
+The packaging checks cover moving/renaming the AppImage, relative game paths,
+bundled icon lookup, USB rule output, terminal metadata, license files and native
+USB enumeration using the bundled libraries. They do not require a console.
 
 The CLI suite has 12 tests. Its fixture replaces `ssh` with an adapter that runs real
 local shell/tar/file operations. It checks argument/FEL validation, game metadata,

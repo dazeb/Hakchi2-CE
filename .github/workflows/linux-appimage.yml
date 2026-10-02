@@ -1,0 +1,40 @@
+name: Experimental Linux CLI AppImage
+
+on:
+  push:
+    paths: ['hakchi_cli/**', 'hakchi_gui/**', 'Libraries/FelLib/**', '.github/workflows/linux-appimage.yml', 'LICENSE']
+  pull_request:
+    paths: ['hakchi_cli/**', 'hakchi_gui/**', 'Libraries/FelLib/**', '.github/workflows/linux-appimage.yml', 'LICENSE']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: git submodule update --init Libraries/FelLib
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install packaging dependencies
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0 libudev1 desktop-file-utils curl python3 file
+      - name: Build AppImage
+        run: bash hakchi_cli/appimage.sh
+      - name: Check USB packet parser
+        run: dotnet run --project hakchi_cli/tests/ProtocolTests.csproj -c Release
+      - name: Check packaged CLI and AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+        run: |
+          python3 hakchi_cli/tests/test_cli.py --binary hakchi_cli/bin/appimage/hakchi-linux-x64.AppImage
+          python3 hakchi_cli/tests/test_appimage.py --binary hakchi_cli/bin/appimage/hakchi-linux-x64.AppImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hakchi-linux-x64-experimental-AppImage
+          path: |
+            hakchi_cli/bin/appimage/*.AppImage
+            hakchi_cli/bin/appimage/*.sha256
+          if-no-files-found: error

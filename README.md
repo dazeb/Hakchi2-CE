@@ -8,6 +8,10 @@ remains in this repository; the Linux entry point is `hakchi_cli/`.
 building, connecting, games, modules, backups, recovery and troubleshooting.
 The [original Windows documentation](hakchi_gui/README.md) describes the GUI.
 
+For a single-file Linux package, build the [experimental CLI AppImage](hakchi_cli/README.md#appimage):
+`bash hakchi_cli/appimage.sh`. It includes .NET, USB libraries and the CLI payloads.
+Run it from a terminal with `./hakchi-linux-x64.AppImage --help`.
+
 ## Why a Linux port is possible
 
 The Windows application targets .NET Framework 4.8 and uses Windows Forms. Its UI
