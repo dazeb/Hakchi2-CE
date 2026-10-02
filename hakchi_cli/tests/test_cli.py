@@ -32,6 +32,7 @@ from pathlib import Path
 root = Path(os.environ['HAKCHI_TEST_ROOT'])
 assert sys.argv[-2] == 'root@fixture', sys.argv
 assert '-T' in sys.argv and '-p' in sys.argv and '--' in sys.argv
+if os.environ.get('HAKCHI_NONINTERACTIVE') == '1': assert 'BatchMode=yes' in sys.argv
 command = sys.argv[-1].replace('/tmp/hakchi-cli-', str(root) + '/tmp/hakchi-cli-').replace('/var/version', str(root / 'version'))
 with (root / 'commands').open('a') as log: log.write(json.dumps(command) + '\\n')
 os.execv('/bin/sh', ['sh', '-c', command])
@@ -135,6 +136,8 @@ os.execv('/bin/mv', ['mv'] + sys.argv[1:])
         self.assertEqual(result.stdout, data)
         self.assertEqual(result.stderr, b'problem')
         self.assertEqual(self.call('exec', 'cat', network=True).stdout, b'')
+        self.env['HAKCHI_NONINTERACTIVE'] = '1'
+        self.assertEqual(self.call('exec', "printf 'desktop batch SSH'", network=True).stdout, b'desktop batch SSH')
 
     def test_upload_download_binary_and_quoting(self):
         source = self.root / 'source'

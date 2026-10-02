@@ -1,38 +1,47 @@
-# Hakchi2 CE — Linux command-line port
+# Hakchi2 CE — Linux desktop and CLI
 
-Manage a NES/SNES Classic from a Linux terminal using the existing Hakchi USB/FEL
-code, game metadata format and emulator command mappings. The Windows application
-remains in this repository; the Linux entry point is `hakchi_cli/`.
+Manage a NES/SNES Classic from a native Linux desktop or terminal using the existing
+Hakchi USB/FEL code, game metadata format and emulator command mappings. The Windows
+application remains in this repository; the Linux frontend is `hakchi_frontend/`
+and its backend is `hakchi_cli/`.
 
-**Start with the [Linux setup and usage guide](hakchi_cli/README.md).** It covers
+**Start with the [Linux desktop guide](hakchi_frontend/README.md).** For terminal
+workflows, the [CLI setup and usage guide](hakchi_cli/README.md) covers
 building, connecting, games, modules, backups, recovery and troubleshooting.
 The [original Windows documentation](hakchi_gui/README.md) describes the GUI.
 
 ## Download and run on Linux
 
-The [experimental Linux CLI v0.1.0 release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-cli-v0.1.0)
+The [experimental Linux desktop v0.2.0 release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-desktop-v0.2.0)
 provides a single-file **x86-64 AppImage**, its SHA-256 checksum and a source archive
 including the FEL submodule. The AppImage includes .NET, USB libraries, CLI payloads,
-the setup guide and license notices. It is a terminal application.
+Avalonia frontend, the setup guides and license notices. Opening it without arguments
+launches the compact dark GUI; explicit command arguments run the CLI.
 
 Download and verify it before running:
 
 ```sh
-curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-cli-v0.1.0/hakchi-linux-x64.AppImage
-curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-cli-v0.1.0/hakchi-linux-x64.AppImage.sha256
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.2.0/hakchi-linux-x64.AppImage
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.2.0/hakchi-linux-x64.AppImage.sha256
 sha256sum -c hakchi-linux-x64.AppImage.sha256
 chmod +x hakchi-linux-x64.AppImage
-./hakchi-linux-x64.AppImage --help
+./hakchi-linux-x64.AppImage
 ```
 
 The release is built on Debian 12. Use a supported glibc-based Linux distribution
 with the standard .NET native dependencies (including ICU and OpenSSL); SSH commands
 also need OpenSSH. If FUSE is unavailable, run
-`./hakchi-linux-x64.AppImage --appimage-extract-and-run --help`.
+`./hakchi-linux-x64.AppImage --appimage-extract-and-run`. The GUI needs X11 or
+XWayland and standard desktop libraries; see the [desktop prerequisites](hakchi_frontend/README.md).
 For USB permissions, connection setup and build instructions, see the
 [AppImage guide](hakchi_cli/README.md#appimage).
 
 ## Recent changes
+
+- Added a native compact dark frontend with game import, search and artwork preview,
+  connection settings, status checks, library sync, module installation and backup saving.
+- The AppImage now opens a GUI by default, with desktop integration and settings
+  stored outside the bundle. Existing terminal commands remain available.
 
 - Added a native .NET 10 Linux CLI for game preparation and sync, modules, file
   transfers, stored backups, SSH/USB shell access and low-level FEL recovery.
@@ -42,7 +51,7 @@ For USB permissions, connection setup and build instructions, see the
 - Added CLI regressions, USB protocol checks and AppImage relocation/native-library
   checks, plus a Linux packaging workflow in GitHub Actions.
 
-The Linux port and packaging are merged into this fork's `mainline` branch. The
+The Linux frontend, CLI and packaging are on this fork's `mainline` branch. The
 Windows GUI and its original documentation remain available separately.
 
 ## Why a Linux port is possible
@@ -55,10 +64,15 @@ and emulator command translation.
 The Linux CLI compiles those shared sources into a .NET 10 console application.
 It accesses USB through the system's `libusb-1.0` and delegates network connections
 to OpenSSH. This keeps the port small and provides terminal workflows without
-rebuilding the GUI. The initial CLI adapter is about 600 lines of C#; the existing
+porting the Windows Forms UI. The native Avalonia frontend invokes the same backend.
+The initial CLI adapter is about 600 lines of C#; the existing
 transport libraries do most of the work.
 
 ## What you can do
+
+The desktop offers local library preparation, status/USB discovery, synchronization,
+module installation and stored-backup retrieval. File transfers and low-level FEL
+operations remain available through the CLI below.
 
 | Task | Commands | Requirements |
 | --- | --- | --- |
@@ -72,7 +86,8 @@ transport libraries do most of the work.
 | Read/write flash regions | `fel read-nand`, `fel flash-*` | Compatible payloads and knowledge of the flash layout |
 
 **This is a minimal port with limited hardware validation.** The Linux x64 build,
-12 CLI regressions, USB packet parser checks and extracted-package smoke checks have
+CLI regressions, frontend adapter and window checks, USB packet parser checks and
+extracted-package checks have
 passed. Transfers, menu behavior, recovery boots and flashing have not been validated
 on a real NES/SNES Classic in this work. ARM64 is a build target, not a tested release.
 
@@ -110,6 +125,7 @@ recovery RAM boot does not install firmware.
 
 ## How it works and how to contribute
 
+`hakchi_frontend/` contains the native window, backend adapter and saved settings.
 `hakchi_cli/` contains command dispatch, shell adapters, game packaging, FEL argument
 checks, the build script and tests. It links sources from `Libraries/FelLib/`,
 `hakchi_gui/Clovershell/`, `DesktopFile.cs` and `CoreCommands.cs`. Vendored submodule

@@ -72,26 +72,29 @@ every native operating-system dependency.
 ### AppImage
 
 Download the x86-64 AppImage and checksum from the
-[experimental Linux CLI v0.1.0 release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-cli-v0.1.0).
+[experimental Linux desktop v0.2.0 release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-desktop-v0.2.0).
 It is built on Debian 12 and includes a matching source archive with the FEL submodule.
 ARM64 remains an unvalidated build target; this release provides x86-64 only.
 
 ```sh
-curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-cli-v0.1.0/hakchi-linux-x64.AppImage
-curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-cli-v0.1.0/hakchi-linux-x64.AppImage.sha256
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.2.0/hakchi-linux-x64.AppImage
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.2.0/hakchi-linux-x64.AppImage.sha256
 sha256sum -c hakchi-linux-x64.AppImage.sha256
 ```
 
 The experimental AppImage keeps the CLI, .NET runtime, `libusb-1.0`, `libudev`,
 payloads, USB permissions rule, documentation and license notices in one file.
-No .NET installation or separate libusb package is needed to run it. It is still
-a terminal application; commands and hardware limitations are unchanged.
+No .NET installation or separate libusb package is needed to run it. Without arguments
+it opens the [native desktop frontend](../hakchi_frontend/README.md). Explicit command
+arguments run this CLI; backend commands and hardware limitations are unchanged.
+The GUI requires X11 or XWayland and standard desktop libraries.
 
 With `hakchi-linux-x64.AppImage` in your current directory:
 
 ```sh
 chmod +x hakchi-linux-x64.AppImage
-./hakchi-linux-x64.AppImage --help
+./hakchi-linux-x64.AppImage          # Open the graphical frontend
+./hakchi-linux-x64.AppImage --help   # Use terminal commands
 ./hakchi-linux-x64.AppImage game-add ./game.nes ./games --core fceumm --name 'My Game'
 ./hakchi-linux-x64.AppImage game-list ./games
 ./hakchi-linux-x64.AppImage devices
@@ -145,7 +148,7 @@ a newer distro can raise the minimum host requirements. Native x86-64 and ARM64
 builders select their corresponding target automatically; cross-packaging is not
 supported. ARM64 packaging has not been validated on an ARM64 host.
 
-The `Experimental Linux CLI AppImage` GitHub Actions workflow builds x64 on Ubuntu
+The `Experimental Linux Desktop AppImage` GitHub Actions workflow builds x64 on Ubuntu
 22.04, runs software checks and uploads the AppImage/checksum as a workflow artifact.
 It does not publish a release. Local build outputs are ignored by Git. When sharing
 a binary, also provide its matching source and submodule revisions under the existing
@@ -154,7 +157,7 @@ replace real NES/SNES Classic validation.
 
 ### Build from source
 
-The Linux port and AppImage packaging are merged into `mainline` in the
+The Linux frontend, CLI and AppImage packaging are on `mainline` in the
 `dazeb/Hakchi2-CE` fork. Select this fork rather than the Team Shinkansen upstream:
 
 ```sh
@@ -631,7 +634,7 @@ APPIMAGE_EXTRACT_AND_RUN=1 python3 hakchi_cli/tests/test_appimage.py \
 ```
 
 The packaging checks cover moving/renaming the AppImage, relative game paths,
-bundled icon lookup, USB rule output, terminal metadata, license files and native
+bundled icon lookup, USB rule output, desktop metadata, license files and native
 USB enumeration using the bundled libraries. They do not require a console.
 
 The CLI suite has 12 tests. Its fixture replaces `ssh` with an adapter that runs real

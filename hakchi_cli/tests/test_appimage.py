@@ -61,14 +61,28 @@ class AppImageTests(unittest.TestCase):
         for name in ('libusb-1.0.so.0', 'libudev.so.1'):
             self.assertIn(b'calling init: ' + str(self.appdir / 'usr/lib' / name).encode(), result.stderr)
 
-    def test_terminal_entry_and_distribution_files(self):
-        self.assertIn('Terminal=true', (self.appdir / 'hakchi.desktop').read_text())
+    def test_desktop_entry_and_distribution_files(self):
+        self.assertIn('Terminal=false', (self.appdir / 'hakchi.desktop').read_text())
         for name in ('payloads/fes1.bin', 'README.md', 'LICENSE'):
             self.assertTrue((self.appdir / 'usr/lib/hakchi' / name).is_file(), name)
         for name in ('LGPL-2.1', 'libusb-copyright', 'libudev-copyright',
                      'LibUsbDotNet-LICENSE', 'AppImage-runtime-LICENSE',
                      'dotnet-LICENSE.TXT', 'dotnet-THIRD-PARTY-NOTICES.TXT'):
             self.assertTrue((self.appdir / 'usr/share/doc/hakchi/licenses' / name).is_file(), name)
+        for name in ('hakchi-desktop', 'hakchi-desktop.dll', 'README.md'):
+            self.assertTrue((self.appdir / 'usr/lib/hakchi-desktop' / name).is_file(), name)
+        self.assertTrue((self.appdir / 'usr/share/doc/hakchi/licenses/frontend/Avalonia-MIT.txt').is_file())
+        self.assertTrue((self.appdir / 'usr/share/doc/hakchi/licenses/frontend/DEPENDENCIES.txt').is_file())
+
+    def test_missing_desktop_keeps_cli_available(self):
+        env = dict(os.environ)
+        env.pop('DISPLAY', None)
+        result = subprocess.run([str(self.appdir / 'AppRun')], env=env, capture_output=True, timeout=15)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b'X11 or XWayland', result.stderr)
+        result = subprocess.run([str(self.appdir / 'AppRun'), '--help'], env=env, capture_output=True, timeout=15)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn(b'game-add', result.stdout)
 
 
 if __name__ == '__main__':

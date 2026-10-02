@@ -52,6 +52,11 @@ internal sealed class Shell : IDisposable
         };
         foreach (var arg in new[] { "-T", "-o", $"ConnectTimeout={timeout}", "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=2", "-p", port.ToString(), "--", $"root@{host}", command })
             start.ArgumentList.Add(arg);
+        if (Environment.GetEnvironmentVariable("HAKCHI_NONINTERACTIVE") == "1")
+        {
+            start.ArgumentList.Insert(0, "BatchMode=yes");
+            start.ArgumentList.Insert(0, "-o");
+        }
         using var process = Process.Start(start) ?? throw new IOException("Could not start OpenSSH.");
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         deadline.CancelAfter(TimeSpan.FromSeconds(timeout));

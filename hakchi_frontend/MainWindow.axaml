@@ -1,0 +1,120 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:HakchiDesktop" x:Class="HakchiDesktop.MainWindow"
+        Title="Hakchi Desktop" Width="1180" Height="800" MinWidth="960" MinHeight="680"
+        WindowStartupLocation="CenterScreen">
+  <Grid RowDefinitions="64,*,180,32">
+    <Border Background="#202329" BorderBrush="#343941" BorderThickness="0,0,0,1" Padding="20,8">
+      <Grid ColumnDefinitions="44,*,Auto">
+        <Image Source="avares://hakchi-desktop/Assets/hakchi.png" Width="36" Height="36" />
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0">
+          <TextBlock Text="Hakchi Desktop" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock Text="NES / SNES Classic · Linux" Classes="secondary" FontSize="12" />
+        </StackPanel>
+        <Button Grid.Column="2" Content="Setup guide" Click="GuideClick" />
+      </Grid>
+    </Border>
+    <Grid Grid.Row="1" ColumnDefinitions="*,320" Margin="20,20,20,12" ColumnSpacing="20">
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,16" ColumnSpacing="8">
+          <StackPanel>
+            <TextBlock Text="Your game library" FontSize="26" FontWeight="SemiBold" />
+            <TextBlock x:Name="LibraryCount" Text="Loading library…" Classes="secondary" />
+          </StackPanel>
+          <Button x:Name="ImportButton" Grid.Column="1" Content="Add games" Classes="accent"
+                  VerticalAlignment="Center" Click="ImportClick" />
+          <Button x:Name="RefreshButton" Grid.Column="2" Content="Refresh" VerticalAlignment="Center" Click="RefreshClick" />
+          <Button x:Name="SyncButton" Grid.Column="3" Content="Sync library" VerticalAlignment="Center" Click="SyncClick" />
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,0,0,10">
+          <TextBox x:Name="LibraryPath" PlaceholderText="Local game library directory" AutomationProperties.Name="Local game library directory" />
+          <Button x:Name="LibraryButton" Grid.Column="1" Content="Choose library" Click="LibraryClick" />
+        </Grid>
+        <TextBox Grid.Row="2" x:Name="SearchBox" PlaceholderText="Search games or emulator commands"
+                 AutomationProperties.Name="Search library" Margin="0,0,0,12" TextChanged="SearchChanged" />
+        <Grid Grid.Row="3" RowDefinitions="32,*">
+          <Grid ColumnDefinitions="*,110,140" Margin="12,0" Opacity="0.7">
+            <TextBlock Text="Game" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="Emulator" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="Game ID" VerticalAlignment="Center" />
+          </Grid>
+          <Border Grid.Row="1" Background="#121418" BorderBrush="#343941" BorderThickness="1" CornerRadius="6">
+            <Grid>
+              <ListBox x:Name="GameList" Background="Transparent" BorderThickness="0"
+                       SelectionChanged="GameSelected" AutomationProperties.Name="Game library">
+                <ListBox.ItemTemplate>
+                  <DataTemplate DataType="local:GameEntry">
+                    <Grid ColumnDefinitions="*,110,140" MinHeight="38">
+                      <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="1" Text="{Binding Core}" Classes="secondary" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="2" Text="{Binding Code}" Classes="secondary" FontSize="12" VerticalAlignment="Center" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="320">
+                <Image Source="avares://hakchi-desktop/Assets/hakchi.png" Width="72" Height="72" Opacity="0.65" />
+                <TextBlock x:Name="EmptyTitle" Text="Build your Classic library" FontSize="18" HorizontalAlignment="Center" />
+                <TextBlock x:Name="EmptyDescription" Text="Add ROMs and choose their emulator. You can prepare games before connecting your console."
+                           Classes="secondary" TextWrapping="Wrap" TextAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Border>
+        </Grid>
+        <TextBlock Grid.Row="4" Text="Games and backups stay on your computer, outside the AppImage."
+                   Classes="secondary" FontSize="12" Margin="0,10,0,0" />
+      </Grid>
+      <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="12">
+          <Border Background="#202329" CornerRadius="8" Padding="12">
+            <StackPanel Spacing="10">
+              <Image x:Name="GameArt" Height="100" Stretch="Uniform" />
+              <TextBlock x:Name="GameName" Text="Select a game" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock x:Name="GameDetails" Text="Preview its artwork and emulator command here." Classes="secondary" TextWrapping="Wrap" />
+              <Button x:Name="FolderButton" Content="Open game folder" Click="FolderClick" IsEnabled="False" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+          <StackPanel x:Name="ConnectionPanel" Spacing="8">
+            <TextBlock Text="Console connection" FontSize="18" FontWeight="SemiBold" />
+            <ComboBox x:Name="ConnectionType" SelectedIndex="0" HorizontalAlignment="Stretch" AutomationProperties.Name="Connection type">
+              <ComboBoxItem Content="USB clovershell" />
+              <ComboBoxItem Content="SSH / network" />
+            </ComboBox>
+            <Grid ColumnDefinitions="*,74" ColumnSpacing="8">
+              <TextBox x:Name="HostBox" PlaceholderText="Console IP / hostname" AutomationProperties.Name="Console hostname" />
+              <TextBox x:Name="PortBox" Grid.Column="1" Text="22" PlaceholderText="Port" AutomationProperties.Name="SSH port" />
+            </Grid>
+            <TextBlock Text="SSH uses your existing keys and known hosts. Approve a new host once in a terminal."
+                       Classes="secondary" FontSize="12" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Content="Check status" HorizontalAlignment="Stretch" Click="StatusClick" />
+              <Button Grid.Column="1" Content="Find USB devices" HorizontalAlignment="Stretch" Click="DevicesClick" />
+            </Grid>
+            <TextBlock Text="Console game storage" Classes="secondary" FontSize="12" Margin="0,4,0,0" />
+            <TextBox x:Name="RemotePath" Text="/var/lib/hakchi/games" AutomationProperties.Name="Console game storage" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Content="Install module" HorizontalAlignment="Stretch" Click="ModuleClick" />
+              <Button Grid.Column="1" Content="Save backup" HorizontalAlignment="Stretch" Click="BackupClick" />
+            </Grid>
+            <TextBlock Text="For consoles already running compatible hakchi firmware. Initial firmware installation and raw flashing use separate workflows."
+                       Classes="secondary" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" />
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+    <Border Grid.Row="2" Background="#121418" BorderBrush="#343941" BorderThickness="0,1,0,0" Padding="20,10">
+      <Grid RowDefinitions="Auto,*">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="Activity" FontWeight="SemiBold" />
+          <Button Grid.Column="1" Content="Copy activity" MinHeight="24" Padding="8,2" Click="CopyClick" />
+        </Grid>
+        <TextBox Grid.Row="1" x:Name="Activity" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                 Background="Transparent" BorderThickness="0" Padding="0" Margin="0,6,0,0" FontFamily="monospace"
+                 FontSize="12" AutomationProperties.Name="Activity output" />
+      </Grid>
+    </Border>
+    <Grid Grid.Row="3" ColumnDefinitions="*,160" Margin="20,0">
+      <TextBlock x:Name="StatusText" Text="Ready" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      <ProgressBar Grid.Column="1" x:Name="OperationProgress" IsVisible="False" IsIndeterminate="True" Height="3" />
+    </Grid>
+  </Grid>
+</Window>

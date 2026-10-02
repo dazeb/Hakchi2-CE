@@ -6,5 +6,13 @@ if [ "$#" -eq 1 ] && [ "$1" = "--print-udev-rules" ]; then
     exit 0
 fi
 export LD_LIBRARY_PATH="$appdir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+if [ "$#" -eq 0 ] || [ "$1" = "--gui" ]; then
+    if [ "$#" -gt 0 ]; then shift; fi
+    if [ -z "${DISPLAY:-}" ]; then
+        printf 'Hakchi Desktop needs an X11 or XWayland desktop session.\nUse --help for terminal commands.\n' >&2
+        exit 1
+    fi
+    exec "$appdir/usr/lib/hakchi-desktop/hakchi-desktop" "$@"
+fi
 # Keep the caller's working directory, streams, signals and exit status.
 exec "$appdir/usr/lib/hakchi/hakchi" "$@"

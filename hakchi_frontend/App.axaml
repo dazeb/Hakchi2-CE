@@ -1,0 +1,31 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="HakchiDesktop.App" RequestedThemeVariant="Dark">
+  <Application.Styles>
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Dark" Accent="#D96C72" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
+    <Style Selector="Window">
+      <Setter Property="Background" Value="#17191D" />
+      <Setter Property="Foreground" Value="#ECEEF2" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="12,4" />
+    </Style>
+    <Style Selector="TextBlock.secondary">
+      <Setter Property="Foreground" Value="#ABB2BE" />
+    </Style>
+  </Application.Styles>
+</Application>

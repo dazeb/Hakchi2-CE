@@ -30,6 +30,11 @@ licenses="$appdir/usr/share/doc/hakchi/licenses"
   --self-contained true -p:PublishSingleFile=false -p:DebugType=None \
   -o "$appdir/usr/lib/hakchi"
 
+"${DOTNET:-dotnet}" publish ../hakchi_frontend/hakchi_frontend.csproj -c Release -r "$runtime" \
+  --self-contained true -p:PublishSingleFile=false -p:DebugType=None \
+  -o "$appdir/usr/lib/hakchi-desktop"
+cp ../hakchi_frontend/README.md "$appdir/usr/lib/hakchi-desktop/"
+
 # Bundle USB libraries, but leave glibc and the standard .NET native OS dependencies
 # to the host. Select native libraries explicitly on multiarch build machines.
 for library in libusb-1.0.so.0 libudev.so.1; do
@@ -63,6 +68,7 @@ package = next(Path(p) / f'microsoft.netcore.app.runtime.{runtime}/{version}' fo
 for name in ('LICENSE.TXT', 'THIRD-PARTY-NOTICES.TXT'):
     shutil.copyfile(package / name, appdir / 'usr/share/doc/hakchi/licenses' / ('dotnet-' + name))
 PY
+python3 ../hakchi_frontend/package_licenses.py "$appdir/usr/share/doc/hakchi/licenses"
 cp appimage/AppRun appimage/hakchi.desktop appimage/hakchi.png "$appdir/"
 chmod 755 "$appdir/AppRun"
 ln -s hakchi.png "$appdir/.DirIcon"
@@ -90,4 +96,4 @@ ARCH="$arch" "$work/squashfs-root/AppRun" --runtime-file "$work/runtime" \
 chmod 755 "$work/hakchi.AppImage"
 mv -- "$work/hakchi.AppImage" "$image"
 (cd "$output" && sha256sum "${image##*/}" > "${image##*/}.sha256")
-printf '\nCreated: %s\nRun: %s --help\n' "$image" "$image"
+printf '\nCreated: %s\nOpen desktop: %s\nCLI help: %s --help\n' "$image" "$image" "$image"
