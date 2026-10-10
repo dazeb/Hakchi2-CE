@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=Hakchi Desktop (Experimental)
-Comment=Manage a NES/SNES Classic game library
+Name=Hakchi Desktop — SNES (Experimental)
+Comment=Manage a SNES Mini / Super Famicom game library
 Exec=AppRun
 Icon=hakchi
 Terminal=false

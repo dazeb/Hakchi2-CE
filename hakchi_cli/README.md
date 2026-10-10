@@ -11,11 +11,20 @@ and emulator command mappings directly. USB uses `libusb-1.0`; SSH uses the syst
 OpenSSH client. A published build includes the .NET runtime. Wine, a desktop session
 and Windows driver installers are not required to run it.
 
-**Current status:** Linux x64 builds and software checks pass. Real console transfers,
-menu behavior, recovery boots and flashing still need hardware validation. This is
-not full feature parity with the Windows GUI. The stock SNES installer has software
-tests but has not yet been validated on real hardware. Storage expansion and factory
+**Current status:** Linux x64 builds and software checks pass. On 10 October 2026,
+the maintainer confirmed the SNES Mini workflow is fully working on their console:
+stock Hakchi setup, RetroArch/Snes9x installation, game sync and game launch.
+Other console models, low-level FEL flashing and ARM64 remain unvalidated. This
+port does not have full Windows feature parity. Storage expansion and factory
 reset are not automated.
+
+Current builds include pinned RetroArch 1.9.10 RGUI and Snes9x console modules.
+After installing Hakchi and saving your backup, run
+`hakchi --host CONSOLE_IP snes-modules-install --yes`. Both local archives are
+checksum-verified before connecting; RetroArch installs first, Snes9x second,
+and the command checks their installed launcher/core files. Use `--core snes9x`
+for SNES imports. See the [bundled module guide](modules/README.md) for provenance,
+licenses and retry behavior. The v0.3.0 release predates these bundled modules.
 
 ## Contents
 

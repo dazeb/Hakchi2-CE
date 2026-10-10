@@ -32,6 +32,11 @@ try
     Console.WriteLine("PASS: game-list parsing, sorting, details and empty library");
 
     var settingsPath = Path.Combine(root, "config", "preferences.json");
+    Assert(Preferences.Load(settingsPath).Core == "snes9x", "New settings must default to SNES");
+    var oldNesSettings = new Preferences { Core = "fceumm" };
+    Assert(oldNesSettings.ImportCore(new[] { "game.SFC", "game.smc" }) == "snes9x", "SNES imports reused a saved NES emulator");
+    Assert(oldNesSettings.ImportCore(new[] { "game.nes" }) == "fceumm", "Non-SNES imports lost their saved emulator");
+    Console.WriteLine("PASS: SNES startup default and SNES ROM selection with existing NES preferences");
     var settings = new Preferences { Library = root, UseSsh = true, Host = "192.0.2.10", Port = "2222", Core = "snes9x" };
     settings.Save(settingsPath);
     settings.Host = "classic.local";

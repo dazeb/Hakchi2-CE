@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="firmware.json" LogicalName="HakchiCli.firmware.json" />
+    <EmbeddedResource Include="modules/manifest.json" LogicalName="HakchiCli.modules.json" />
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>InstallerTests</_Parameter1>
     </AssemblyAttribute>
@@ -24,6 +25,9 @@
     <Compile Include="../hakchi_gui/Apps/CoreCommands.cs" Link="Shared/CoreCommands.cs" />
     <None Include="../hakchi_gui/data/fes1.bin" Link="payloads/fes1.bin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="../hakchi_gui/images/blank_app.png" Link="payloads/blank_app.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="../hakchi_gui/images/blank_snes-eu-jp.png" Link="payloads/blank_snes.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="modules/*.hmod" Link="payloads/snes-modules/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="modules/manifest.json;modules/README.md;modules/licenses/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="../hakchi_gui/mods/hmods/**/*" Link="payloads/base-modules/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="../LICENSE" Link="LICENSE" CopyToPublishDirectory="PreserveNewest" />
     <None Update="README.md;70-hakchi.rules" CopyToPublishDirectory="PreserveNewest" />

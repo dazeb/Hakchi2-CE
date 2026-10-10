@@ -1,23 +1,29 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="using:HakchiDesktop" x:Class="HakchiDesktop.MainWindow"
-        Title="Hakchi Desktop" Width="1180" Height="800" MinWidth="960" MinHeight="680"
+        Title="Hakchi Desktop — SNES" Width="1180" Height="800" MinWidth="960" MinHeight="680"
         WindowStartupLocation="CenterScreen">
-  <Grid RowDefinitions="64,*,180,32">
-    <Border Background="#202329" BorderBrush="#343941" BorderThickness="0,0,0,1" Padding="20,8">
-      <Grid ColumnDefinitions="44,*,Auto">
-        <Image Source="avares://hakchi-desktop/Assets/hakchi.png" Width="36" Height="36" />
+  <Grid RowDefinitions="72,*,180,32">
+    <Border Background="#2B2838" BorderBrush="#484256" BorderThickness="0,0,0,1" Padding="20,8">
+      <Grid ColumnDefinitions="88,*,Auto,Auto">
+        <Image Source="avares://hakchi-desktop/Assets/snes-controller.png" Width="80" Height="40" />
         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0">
-          <TextBlock Text="Hakchi Desktop" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock Text="NES / SNES Classic · Linux" Classes="secondary" FontSize="12" />
+          <TextBlock Text="Hakchi Desktop · SNES" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock Text="SNES Mini / Super Famicom · Linux" Classes="secondary" FontSize="12" />
         </StackPanel>
-        <Button Grid.Column="2" Content="Setup guide" Click="GuideClick" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" Margin="0,0,20,0" VerticalAlignment="Center" AutomationProperties.Name="Super Famicom button colors">
+          <Ellipse Width="12" Height="12" Fill="#4CA86A" />
+          <Ellipse Width="12" Height="12" Fill="#4E9CDE" />
+          <Ellipse Width="12" Height="12" Fill="#E4C653" />
+          <Ellipse Width="12" Height="12" Fill="#E46B73" />
+        </StackPanel>
+        <Button Grid.Column="3" Content="Setup guide" Click="GuideClick" />
       </Grid>
     </Border>
     <Grid Grid.Row="1" ColumnDefinitions="*,320" Margin="20,20,20,12" ColumnSpacing="20">
       <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
         <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,16" ColumnSpacing="8">
           <StackPanel>
-            <TextBlock Text="Your game library" FontSize="26" FontWeight="SemiBold" />
+            <TextBlock Text="Your SNES library" FontSize="26" FontWeight="SemiBold" />
             <TextBlock x:Name="LibraryCount" Text="Loading library…" Classes="secondary" />
           </StackPanel>
           <Button x:Name="ImportButton" Grid.Column="1" Content="Add games" Classes="accent"
@@ -37,7 +43,7 @@
             <TextBlock Grid.Column="1" Text="Emulator" VerticalAlignment="Center" />
             <TextBlock Grid.Column="2" Text="Game ID" VerticalAlignment="Center" />
           </Grid>
-          <Border Grid.Row="1" Background="#121418" BorderBrush="#343941" BorderThickness="1" CornerRadius="6">
+          <Border Grid.Row="1" Background="#15131D" BorderBrush="#484256" BorderThickness="1" CornerRadius="6">
             <Grid>
               <ListBox x:Name="GameList" Background="Transparent" BorderThickness="0"
                        SelectionChanged="GameSelected" AutomationProperties.Name="Game library">
@@ -52,9 +58,9 @@
                 </ListBox.ItemTemplate>
               </ListBox>
               <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="320">
-                <Image Source="avares://hakchi-desktop/Assets/hakchi.png" Width="72" Height="72" Opacity="0.65" />
-                <TextBlock x:Name="EmptyTitle" Text="Build your Classic library" FontSize="18" HorizontalAlignment="Center" />
-                <TextBlock x:Name="EmptyDescription" Text="Add ROMs and choose their emulator. You can prepare games before connecting your console."
+                <Image Source="avares://hakchi-desktop/Assets/snes-controller.png" Width="144" Height="72" Opacity="0.85" />
+                <TextBlock x:Name="EmptyTitle" Text="Build your SNES library" FontSize="18" HorizontalAlignment="Center" />
+                <TextBlock x:Name="EmptyDescription" Text="Add .sfc or .smc ROMs. Snes9x is selected automatically; prepare your library before connecting your SNES Mini."
                            Classes="secondary" TextWrapping="Wrap" TextAlignment="Center" />
               </StackPanel>
             </Grid>
@@ -65,7 +71,7 @@
       </Grid>
       <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="12">
-          <Border Background="#202329" CornerRadius="8" Padding="12">
+          <Border Background="#2B2838" CornerRadius="8" Padding="12">
             <StackPanel Spacing="10">
               <Image x:Name="GameArt" Height="100" Stretch="Uniform" />
               <TextBlock x:Name="GameName" Text="Select a game" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -74,8 +80,9 @@
             </StackPanel>
           </Border>
           <StackPanel x:Name="ConnectionPanel" Spacing="8">
-            <TextBlock Text="Console connection" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock Text="SNES console connection" FontSize="18" FontWeight="SemiBold" />
             <Button Content="Set up stock SNES Mini" HorizontalAlignment="Stretch" Click="InstallerClick" />
+            <Button Content="Install RetroArch + Snes9x" Classes="accent" HorizontalAlignment="Stretch" Click="SnesModulesClick" />
             <ComboBox x:Name="ConnectionType" SelectedIndex="0" HorizontalAlignment="Stretch" AutomationProperties.Name="Connection type">
               <ComboBoxItem Content="USB clovershell" />
               <ComboBoxItem Content="SSH / network" />
@@ -102,7 +109,7 @@
         </StackPanel>
       </ScrollViewer>
     </Grid>
-    <Border Grid.Row="2" Background="#121418" BorderBrush="#343941" BorderThickness="0,1,0,0" Padding="20,10">
+    <Border Grid.Row="2" Background="#15131D" BorderBrush="#484256" BorderThickness="0,1,0,0" Padding="20,10">
       <Grid RowDefinitions="Auto,*">
         <Grid ColumnDefinitions="*,Auto">
           <TextBlock Text="Activity" FontWeight="SemiBold" />

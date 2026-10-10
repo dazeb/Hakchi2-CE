@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import tarfile
 import unittest
 
 parser = argparse.ArgumentParser()
@@ -85,6 +86,46 @@ class AppImageTests(unittest.TestCase):
         result = subprocess.run([str(self.appdir / 'AppRun'), '--help'], env=env, capture_output=True, timeout=15)
         self.assertEqual(result.returncode, 0)
         self.assertIn(b'game-add', result.stdout)
+
+    def test_snes_modules_and_notices_are_bundled(self):
+        docs = self.appdir / 'usr/share/doc/hakchi/snes-modules'
+        manifest = json.loads((docs / 'manifest.json').read_text())
+        payload = self.appdir / 'usr/lib/hakchi/payloads/snes-modules'
+        for module in manifest['modules']:
+            path = payload / module['file']
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), module['sha256'])
+            with tarfile.open(path, 'r:gz') as archive:
+                names = {name.removeprefix('./') for name in archive.getnames()}
+                self.assertIn('install', names)
+                self.assertIn('readme.md', names)
+                if 'snes9x' in module['file']:
+                    self.assertIn('bin/snes9x', names)
+                    self.assertIn('etc/libretro/core/km_snes9x_libretro.so', names)
+                else:
+                    self.assertIn('bin/retroarch', names)
+                    self.assertIn('bin/retroarch-clover', names)
+        for name in ('KMFD-LGPL-3.0.txt', 'RetroArch-GPL-3.0.txt', 'Snes9x-LICENSE.txt'):
+            self.assertTrue((docs / 'licenses' / name).is_file(), name)
+
+    def test_corrupt_second_module_is_rejected_before_connection(self):
+        path = self.appdir / 'usr/lib/hakchi/payloads/snes-modules/_km_snes9x_xtreme.hmod'
+        original = path.read_bytes()
+        try:
+            path.write_bytes(original + b'corrupted')
+            adapter = self.root / 'snes-adapter'
+            adapter.mkdir()
+            marker = adapter / 'contacted'
+            ssh = adapter / 'ssh'
+            ssh.write_text('#!/bin/sh\n' + 'touch "' + str(marker) + '"\nexit 99\n')
+            ssh.chmod(0o755)
+            env = dict(os.environ, PATH=str(adapter) + os.pathsep + os.environ['PATH'])
+            result = subprocess.run([str(self.appdir / 'AppRun'), '--host', 'fixture', 'snes-modules-install', '--yes'],
+                                    env=env, capture_output=True, timeout=15)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(b'SHA-256 check', result.stderr)
+            self.assertFalse(marker.exists(), 'A module was installed before validating the entire set')
+        finally:
+            path.write_bytes(original)
 
     def test_stock_installer_has_pinned_firmware_and_base_modules(self):
         manifest = json.loads((self.appdir / 'usr/share/doc/hakchi/firmware.json').read_text())

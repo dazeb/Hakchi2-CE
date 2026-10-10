@@ -34,6 +34,7 @@ licenses="$appdir/usr/share/doc/hakchi/licenses"
   --self-contained true -p:PublishSingleFile=false -p:DebugType=None \
   -o "$appdir/usr/lib/hakchi-desktop"
 cp ../hakchi_frontend/README.md "$appdir/usr/lib/hakchi-desktop/"
+cp -r ../hakchi_frontend/screenshots "$appdir/usr/lib/hakchi-desktop/"
 
 # Bundle USB libraries, but leave glibc and the standard .NET native OS dependencies
 # to the host. Select native libraries explicitly on multiarch build machines.
@@ -69,7 +70,10 @@ for name in ('LICENSE.TXT', 'THIRD-PARTY-NOTICES.TXT'):
     shutil.copyfile(package / name, appdir / 'usr/share/doc/hakchi/licenses' / ('dotnet-' + name))
 PY
 python3 ../hakchi_frontend/package_licenses.py "$appdir/usr/share/doc/hakchi/licenses"
-cp appimage/AppRun appimage/hakchi.desktop appimage/hakchi.png "$appdir/"
+cp appimage/AppRun appimage/hakchi.desktop "$appdir/"
+cp ../hakchi_gui/images/gamepad_snes.png "$appdir/hakchi.png"
+cp -r modules "$appdir/usr/share/doc/hakchi/snes-modules"
+rm "$appdir/usr/share/doc/hakchi/snes-modules/"*.hmod
 chmod 755 "$appdir/AppRun"
 ln -s hakchi.png "$appdir/.DirIcon"
 desktop-file-validate "$appdir/hakchi.desktop"

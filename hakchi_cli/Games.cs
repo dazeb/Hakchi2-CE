@@ -20,7 +20,8 @@ internal static class Games
         if (Directory.Exists(path)) throw new IOException($"Game already exists: {path}. Edit its .desktop file to change settings.");
         name ??= Path.GetFileNameWithoutExtension(rom);
         if (name.IndexOfAny(new[] { '\r', '\n', '\0' }) >= 0) throw new ArgumentException("Game name must be one line.");
-        icon ??= Path.Combine(AppContext.BaseDirectory, "payloads", "blank_app.png");
+        icon ??= Path.Combine(AppContext.BaseDirectory, "payloads",
+            extension is ".sfc" or ".smc" ? "blank_snes.png" : "blank_app.png");
         using (var png = File.OpenRead(icon))
         {
             var header = new byte[8];

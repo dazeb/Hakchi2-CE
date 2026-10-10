@@ -1,5 +1,16 @@
 # Hakchi2 CE — Linux desktop and CLI
 
+**The SNES Mini workflow is fully working on the maintainer's console:** stock
+Hakchi setup, RetroArch/Snes9x installation, game synchronization and game launch
+were confirmed by the maintainer on 10 October 2026. Automated checks separately
+cover the software and packaged desktop. This confirmation covers that SNES
+workflow, not every console model, ROM or Windows feature.
+
+Current `mainline` builds open with a SNES theme, default to Snes9x and include
+pinned RetroArch/Snes9x modules with an **Install RetroArch + Snes9x** action.
+Build the current source or use its GitHub Actions AppImage artifact for these
+changes; the older v0.3.0 download below predates them.
+
 Manage a NES/SNES Classic from a native Linux desktop or terminal using the existing
 Hakchi USB/FEL code, game metadata format and emulator command mappings. The Windows
 application remains in this repository; the Linux frontend is `hakchi_frontend/`
@@ -38,6 +49,11 @@ For USB permissions, connection setup and build instructions, see the
 
 ## Recent changes
 
+- Bundled checksum-verified KMFD RetroArch 1.9.10 RGUI and Snes9x modules,
+  an install-and-check action, SNES import defaults, SNES cartridge artwork and
+  a purple SNES desktop theme with Super Famicom button colors.
+- New Windows configurations default to SNES Europe. Saved console selections
+  and libraries retain their existing behavior.
 - Added a guided stock SNES Mini/Super Famicom installer with pinned firmware,
   original-kernel backup checks and separate post-install verification. This requires
   the v0.3.0 AppImage; older releases predate the installer.
@@ -89,14 +105,15 @@ operations remain available through the CLI below.
 | Boot recovery into RAM | `boot`, `fel memboot` | USB FEL access and compatible payloads |
 | Read/write flash regions | `fel read-nand`, `fel flash-*` | Compatible payloads and knowledge of the flash layout |
 
-**This is a minimal port with limited hardware validation.** The Linux x64 build,
+**This is a focused port with a maintainer-confirmed SNES Mini workflow.** The Linux x64 build,
 CLI regressions, frontend adapter and window checks, USB packet parser checks and
 extracted-package checks have
-passed. Transfers, menu behavior, recovery boots and flashing have not been validated
-on a real NES/SNES Classic in this work. ARM64 is a build target, not a tested release.
+passed. The maintainer confirms stock installation, emulator installation, sync
+and game launch on a real SNES Mini. NES hardware, other console variants,
+low-level flash commands and ARM64 remain outside that confirmation.
 
-The stock installer is limited to recognized SNES Mini/Super Famicom kernels and has
-software validation only. Storage expansion and factory reset are not automated.
+The stock installer is limited to recognized SNES Mini/Super Famicom kernels.
+Storage expansion and factory reset are not automated.
 The CLI also omits Canoe SFROM conversion, automatic game patches, artwork
 search, database enrichment and custom folder generation. The Windows feature list
 does not describe the Linux CLI's capabilities.
@@ -115,7 +132,7 @@ export PATH="$PWD/hakchi_cli/bin/publish/linux-x64:$PATH"
 hakchi --help
 
 # No console is required for these two commands.
-hakchi game-add ./game.nes ./games --core fceumm --name 'My Game'
+hakchi game-add ./game.sfc ./games --core snes9x --name 'My SNES Game'
 hakchi game-list ./games
 ```
 

@@ -1,0 +1,18 @@
+{
+  "repository": "https://github.com/KMFDManic/NESC-SNESC-Modifications",
+  "commit": "73587ffc2371d24ca1499f24b0be17dfe239209f",
+  "modules": [
+    {
+      "name": "RetroArch 1.9.10 RGUI",
+      "file": "_km_retroarch_1910_rgui.hmod",
+      "upstreamPath": "_km_retroarch_1910_rgui.hmod",
+      "sha256": "a4a0dc496a151c656507e206579b101edad0a428af32e52d205cd560980858ef"
+    },
+    {
+      "name": "Snes9x Xtreme",
+      "file": "_km_snes9x_xtreme.hmod",
+      "upstreamPath": "_km_snes9x_xtreme.hmod",
+      "sha256": "db26b69e13a48e3697361905d3546f8e52827be6a6c40f5f4062e9862af92a14"
+    }
+  ]
+}

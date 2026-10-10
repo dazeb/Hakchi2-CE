@@ -34,10 +34,12 @@ assert sys.argv[-2] == 'root@fixture', sys.argv
 assert '-T' in sys.argv and '-p' in sys.argv and '--' in sys.argv
 if os.environ.get('HAKCHI_NONINTERACTIVE') == '1': assert 'BatchMode=yes' in sys.argv
 command = sys.argv[-1].replace('/tmp/hakchi-cli-', str(root) + '/tmp/hakchi-cli-').replace('/var/version', str(root / 'version'))
+if command.startswith('test -x /bin/retroarch'):
+    command = command.replace('/bin/', str(root / 'console/bin') + '/').replace('/etc/libretro/', str(root / 'console/etc/libretro') + '/')
 with (root / 'commands').open('a') as log: log.write(json.dumps(command) + '\\n')
 os.execv('/bin/sh', ['sh', '-c', command])
 ''')
-        self.script('hakchi', '''import os, sys
+        self.script('hakchi', '''import os, sys, shutil
 from pathlib import Path
 root = Path(os.environ['HAKCHI_TEST_ROOT'])
 verb = sys.argv[1]
@@ -46,6 +48,16 @@ elif verb == 'packs_install':
     modules = sorted(Path(sys.argv[2]).glob('*.hmod'))
     assert modules and all((p / 'install').is_file() for p in modules)
     (root / 'installed').write_text(','.join(p.name for p in modules))
+    for module in modules:
+        if module.name.startswith('_km_'):
+            with (root / 'module-order').open('a') as log: log.write(module.name + '\\n')
+            for folder in ('bin', 'etc/libretro/core'):
+                source = module / folder
+                if source.is_dir():
+                    shutil.copytree(source, root / 'console' / folder, dirs_exist_ok=True)
+            for path in (root / 'console/bin').iterdir(): path.chmod(0o755)
+            if (root / 'missing-core').exists():
+                (root / 'console/etc/libretro/core/km_snes9x_libretro.so').unlink(missing_ok=True)
 elif verb == 'pack_uninstall': (root / 'uninstalled').write_text(sys.argv[2])
 elif verb == 'currentFirmware': print('_nand_')
 elif verb == 'findGameSyncStorage': print('/var/lib/hakchi/games')
@@ -183,6 +195,23 @@ os.execv('/bin/mv', ['mv'] + sys.argv[1:])
         self.assertEqual(list((self.root / 'tmp').iterdir()), [])
         self.call('mod-uninstall', "name's mod", network=True)
         self.assertEqual((self.root / 'uninstalled').read_text(), "name's mod")
+
+    def test_bundled_snes_modules_require_confirmation(self):
+        self.call('snes-modules-install', network=True, code=2)
+        self.assertFalse((self.root / 'commands').exists())
+
+    def test_bundled_snes_modules_install_in_order_and_verify(self):
+        result = self.call('snes-modules-install', '--yes', network=True, timeout=30)
+        self.assertEqual((self.root / 'module-order').read_text().splitlines(),
+                         ['_km_retroarch_1910_rgui.hmod', '_km_snes9x_xtreme.hmod'])
+        self.assertIn(b'launcher and core files verified', result.stdout)
+        self.assertEqual(list((self.root / 'tmp').iterdir()), [])
+
+    def test_bundled_snes_modules_missing_core_fails_verification(self):
+        (self.root / 'missing-core').touch()
+        result = self.call('snes-modules-install', '--yes', network=True, code=1, timeout=30)
+        self.assertNotIn(b'launcher and core files verified', result.stdout)
+        self.assertEqual(list((self.root / 'tmp').iterdir()), [])
 
     def test_sync_preserves_games_and_replaces_named_game(self):
         library, game = self.game()

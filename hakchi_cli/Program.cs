@@ -28,6 +28,7 @@ internal static class Program
       firmware-install BACKUP_DIR --yes   Install using that backup and pinned firmware
       firmware-verify BACKUP_DIR      Verify the installed system and retained stock backup
       mod-install MOD.hmod            Install a tar.gz hmod file or hmod directory
+      snes-modules-install --yes       Install and check bundled RetroArch + Snes9x
       mod-uninstall NAME              Uninstall a module
       game-add ROM LIBRARY --core CORE [--name NAME] [--icon PNG]
       game-list LIBRARY               List prepared games, offline
@@ -82,6 +83,21 @@ internal static class Program
             throw new ArgumentException("--host must be a hostname or IP address.");
         var command = args[index++];
         var tail = args[index..];
+        if (command == "snes-modules-install")
+        {
+            if (tail.Length != 1 || tail[0] != "--yes")
+                throw new ArgumentException("snes-modules-install --yes installs bundled RetroArch and Snes9x on the console. Set up Hakchi and save your backup first.");
+            var modules = SnesModules.Validate();
+            if (host == null) InitUsb();
+            using var moduleShell = new Shell(host, port, timeout, cancellation);
+            foreach (var module in modules)
+            {
+                Console.WriteLine("Installing " + Path.GetFileName(module));
+                InstallMod(moduleShell, module);
+            }
+            SnesModules.Verify(moduleShell);
+            return 0;
+        }
         if (command.StartsWith("firmware-", StringComparison.Ordinal))
             return FirmwareCommand(command, tail, host, port, timeout, cancellation);
         if (command == "game-add")

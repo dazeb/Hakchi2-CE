@@ -4,12 +4,12 @@
   <Application.Styles>
     <FluentTheme>
       <FluentTheme.Palettes>
-        <ColorPaletteResources x:Key="Dark" Accent="#D96C72" />
+        <ColorPaletteResources x:Key="Dark" Accent="#B7A2E3" />
       </FluentTheme.Palettes>
     </FluentTheme>
     <Style Selector="Window">
-      <Setter Property="Background" Value="#17191D" />
-      <Setter Property="Foreground" Value="#ECEEF2" />
+      <Setter Property="Background" Value="#1B1924" />
+      <Setter Property="Foreground" Value="#F1EFF6" />
       <Setter Property="FontSize" Value="13" />
     </Style>
     <Style Selector="Button">
@@ -25,7 +25,7 @@
       <Setter Property="Padding" Value="12,4" />
     </Style>
     <Style Selector="TextBlock.secondary">
-      <Setter Property="Foreground" Value="#ABB2BE" />
+      <Setter Property="Foreground" Value="#BBB5CB" />
     </Style>
   </Application.Styles>
 </Application>

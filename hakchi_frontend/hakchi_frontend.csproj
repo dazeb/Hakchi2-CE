@@ -11,6 +11,6 @@
     <Compile Remove="tests/**/*.cs" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
-    <AvaloniaResource Include="../hakchi_cli/appimage/hakchi.png" Link="Assets/hakchi.png" />
+    <AvaloniaResource Include="../hakchi_gui/images/gamepad_snes.png" Link="Assets/snes-controller.png" />
   </ItemGroup>
 </Project>

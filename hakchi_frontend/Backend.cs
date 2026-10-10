@@ -65,7 +65,11 @@ public sealed class Preferences
     public string Host { get; set; } = "";
     public string Port { get; set; } = "22";
     public string Remote { get; set; } = "/var/lib/hakchi/games";
-    public string Core { get; set; } = "fceumm";
+    public const string SnesCore = "snes9x";
+    public string Core { get; set; } = SnesCore;
+
+    public string ImportCore(IEnumerable<string> paths) => paths.All(path =>
+        Path.GetExtension(path).ToLowerInvariant() is ".sfc" or ".smc") ? SnesCore : Core;
 
     public static string FilePath => Path.Combine(Xdg("XDG_CONFIG_HOME", ".config"), "hakchi", "preferences.json");
     public static string BackupRoot => Path.Combine(Xdg("XDG_DATA_HOME", ".local/share"), "hakchi", "backups");

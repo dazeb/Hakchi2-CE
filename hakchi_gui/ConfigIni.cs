@@ -33,7 +33,7 @@ namespace com.clusterrr.hakchi_gui
         [JsonProperty]
         internal Dictionary<hakchi.ConsoleType, GamesCollectionSetting> gamesCollectionSettings;
         [JsonProperty]
-        private hakchi.ConsoleType consoleType = hakchi.ConsoleType.NES;
+        private hakchi.ConsoleType consoleType = hakchi.ConsoleType.SNES_EUR;
         [JsonIgnore]
         public hakchi.ConsoleType ConsoleType
         {

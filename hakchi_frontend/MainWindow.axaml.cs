@@ -22,7 +22,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        using var icon = AssetLoader.Open(new Uri("avares://hakchi-desktop/Assets/hakchi.png"));
+        using var icon = AssetLoader.Open(new Uri("avares://hakchi-desktop/Assets/snes-controller.png"));
         Icon = new WindowIcon(icon);
         try { preferences = Preferences.Load(); }
         catch (Exception ex) { startupError = "Could not read saved settings: " + ex.Message; }
@@ -39,12 +39,14 @@ public partial class MainWindow : Window
             else if (!busy && e.KeyModifiers == KeyModifiers.Control && e.Key == Key.O) { ImportClick(this, new RoutedEventArgs()); e.Handled = true; }
             else if (!busy && e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.S)
             { InstallerClick(this, new RoutedEventArgs()); e.Handled = true; }
+            else if (!busy && e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.M)
+            { SnesModulesClick(this, new RoutedEventArgs()); e.Handled = true; }
             else if (e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.C)
             { CopyClick(this, new RoutedEventArgs()); e.Handled = true; }
         }, RoutingStrategies.Tunnel);
         Opened += async (_, _) =>
         {
-            Log("Hakchi Desktop", "Prepare games locally, then check your console connection before syncing.");
+            Log("Hakchi Desktop · SNES", "SNES profile ready. Import .sfc/.smc games with snes9x. Install the bundled RetroArch + Snes9x on a Hakchi console before syncing.");
             if (startupError != null) Log("Settings", startupError);
             await BusyAsync("Loading library", ReloadAsync);
         };
@@ -139,8 +141,8 @@ public partial class MainWindow : Window
         GameList.ItemsSource = filtered;
         GameList.SelectedItem = filtered.FirstOrDefault(g => g.Code == selected) ?? filtered.FirstOrDefault();
         EmptyState.IsVisible = filtered.Length == 0;
-        EmptyTitle.Text = games.Count == 0 ? "Build your Classic library" : "No matching games";
-        EmptyDescription.Text = games.Count == 0 ? "Add ROMs and choose their emulator. You can prepare games before connecting your console." : "Try another game name, emulator command or game ID.";
+        EmptyTitle.Text = games.Count == 0 ? "Build your SNES library" : "No matching games";
+        EmptyDescription.Text = games.Count == 0 ? "Add .sfc or .smc ROMs. Snes9x is selected automatically; prepare your library before connecting your SNES Mini." : "Try another game name, emulator command or game ID.";
         LibraryCount.Text = search.Length == 0 ? $"{games.Count} games · Local library" : $"{filtered.Length} of {games.Count} games";
         SyncButton.IsEnabled = !busy && games.Count > 0;
         ShowSelection();
@@ -192,11 +194,13 @@ public partial class MainWindow : Window
             var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 Title = "Add game ROMs", AllowMultiple = true,
-                FileTypeFilter = new[] { new FilePickerFileType("Game ROMs") { Patterns = new[] { "*.nes", "*.sfc", "*.smc", "*.gb", "*.gbc", "*.gba", "*.bin", "*.md", "*.sms", "*.gg", "*.n64", "*.z64" } }, FilePickerFileTypes.All }
+                FileTypeFilter = new[] {
+                    new FilePickerFileType("SNES ROMs") { Patterns = new[] { "*.sfc", "*.smc" } },
+                    new FilePickerFileType("Game ROMs") { Patterns = new[] { "*.nes", "*.sfc", "*.smc", "*.gb", "*.gbc", "*.gba", "*.bin", "*.md", "*.sms", "*.gg", "*.n64", "*.z64" } }, FilePickerFileTypes.All }
             });
             var paths = files.Select(f => f.TryGetLocalPath()).Where(p => p != null).Cast<string>().ToArray();
             if (paths.Length == 0) return;
-            var core = new TextBox { Text = preferences.Core, PlaceholderText = "Installed emulator command" };
+            var core = new TextBox { Text = preferences.ImportCore(paths), PlaceholderText = "Installed emulator command" };
             var name = new TextBox { Text = Path.GetFileNameWithoutExtension(paths[0]), IsEnabled = paths.Length == 1 };
             Avalonia.Automation.AutomationProperties.SetName(core, "Emulator command");
             Avalonia.Automation.AutomationProperties.SetName(name, "Game name");
@@ -205,7 +209,7 @@ public partial class MainWindow : Window
                 new TextBlock { Text = $"{paths.Length} ROM file(s) selected", FontWeight = FontWeight.SemiBold },
                 new TextBlock { Text = "Emulator command", Classes = { "secondary" } }, core,
                 new TextBlock { Text = "Game name (multiple games use their filenames)", Classes = { "secondary" } }, name,
-                new TextBlock { Text = "Use a core installed on your console, such as fceumm or snes9x. The default artwork is added automatically.", TextWrapping = TextWrapping.Wrap, Classes = { "secondary" } }
+                new TextBlock { Text = "For SNES games, use snes9x after installing the bundled RetroArch + Snes9x modules. You can choose another installed emulator command here.", TextWrapping = TextWrapping.Wrap, Classes = { "secondary" } }
             } };
             if (!await PromptAsync("Add games", body, "Add to library")) return;
             preferences.Core = core.Text?.Trim() ?? "";
@@ -267,6 +271,22 @@ public partial class MainWindow : Window
             await BusyAsync("Install module", async () => await ExecuteAsync("Install module", ConnectionArguments().Concat(new[] { "mod-install", path })));
         }
         catch (Exception ex) { Log("Install module", ex.Message); }
+    }
+
+    private async void SnesModulesClick(object? sender, RoutedEventArgs e)
+    {
+        if (busy) return;
+        try
+        {
+            if (!await PromptAsync("Install SNES emulators", new TextBlock
+            {
+                Text = "Install bundled RetroArch 1.9.10 RGUI and Snes9x on your connected Hakchi console?\n\nSet up Hakchi and save your original-kernel backup first. This replaces these modules' emulator files and default configuration. After installation, import .sfc/.smc games with snes9x and test a game on your console.",
+                TextWrapping = TextWrapping.Wrap
+            }, "Install RetroArch + Snes9x")) return;
+            await BusyAsync("Install SNES emulators", async () =>
+                await ExecuteAsync("Install SNES emulators", ConnectionArguments().Concat(new[] { "snes-modules-install", "--yes" })));
+        }
+        catch (Exception ex) { Log("Install SNES emulators", ex.Message); }
     }
 
     private async void BackupClick(object? sender, RoutedEventArgs e)

@@ -23,9 +23,9 @@ with tempfile.TemporaryDirectory(prefix='hakchi desktop ') as temporary:
                APPIMAGE_EXTRACT_AND_RUN='1')
     library = root / 'library with spaces'
     for index, name in enumerate(('Classic test game', 'Second test game')):
-        rom = root / (name + '.nes')
-        rom.write_bytes(b'NES\x1a' + bytes(12) + bytes([index + 1]) * 32768)
-        command(str(binary), 'game-add', str(rom), str(library), '--core', 'fceumm', '--name', name, env=env)
+        rom = root / (name + '.sfc')
+        rom.write_bytes(bytes([index + 1]) * 32768)
+        command(str(binary), 'game-add', str(rom), str(library), '--core', 'snes9x', '--name', name, env=env)
     config = root / 'config/hakchi/preferences.json'
     config.parent.mkdir(parents=True)
     config.write_text(json.dumps({'Library': str(library), 'Core': 'fceumm'}))
@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory(prefix='hakchi desktop ') as temporary:
         try:
             window = None
             for _ in range(100):
-                found = subprocess.run(['xdotool', 'search', '--onlyvisible', '--name', '^Hakchi Desktop$'],
+                found = subprocess.run(['xdotool', 'search', '--onlyvisible', '--name', '^Hakchi Desktop'],
                                        env=env, capture_output=True, text=True)
                 if found.returncode == 0:
                     window = found.stdout.splitlines()[0]
@@ -44,6 +44,7 @@ with tempfile.TemporaryDirectory(prefix='hakchi desktop ') as temporary:
                     raise AssertionError('Desktop exited: ' + log.read())
                 time.sleep(0.1)
             assert window is not None, 'The default AppImage entry point did not open a frontend window'
+            assert command('xdotool', 'getwindowname', window, env=env).strip() == 'Hakchi Desktop — SNES'
             command('xdotool', 'windowfocus', '--sync', window, env=env)
 
             def keys(*values):
@@ -72,6 +73,7 @@ with tempfile.TemporaryDirectory(prefix='hakchi desktop ') as temporary:
             time.sleep(0.5)
             screenshot('desktop-startup')
             wait_for('Second test game')
+            assert 'SNES profile ready' in activity()
             assert json.loads(config.read_text())['Library'] == str(library)
             screenshot('desktop-library')
             print('PASS: no-argument graphical launch, real backend library read and persisted settings', flush=True)
@@ -112,6 +114,26 @@ with tempfile.TemporaryDirectory(prefix='hakchi desktop ') as temporary:
             command('xdotool', 'windowfocus', '--sync', window, env=env)
             assert process.poll() is None, 'Closing stock setup terminated the application'
             print('PASS: stock SNES setup opens and closes without accessing a console', flush=True)
+            keys('ctrl+shift+m')
+            modules = None
+            for _ in range(50):
+                found = subprocess.run(['xdotool', 'search', '--onlyvisible', '--name', '^Install SNES emulators$'],
+                                       env=env, capture_output=True, text=True)
+                if found.returncode == 0:
+                    modules = found.stdout.splitlines()[0]
+                    break
+                time.sleep(0.1)
+            assert modules is not None, 'Bundled SNES module confirmation did not open'
+            command('xdotool', 'windowfocus', '--sync', modules, env=env)
+            time.sleep(0.3)
+            if options.screenshots:
+                command('import', '-window', modules, str(Path(options.screenshots) / 'desktop-snes-modules.png'), env=env)
+            # Cancel without opening any console connection.
+            geometry = dict(line.split('=', 1) for line in command('xdotool', 'getwindowgeometry', '--shell', modules, env=env).splitlines())
+            command('xdotool', 'mousemove', '--window', modules, '180', str(int(geometry['HEIGHT']) - 42), 'click', '1', env=env)
+            command('xdotool', 'windowfocus', '--sync', window, env=env)
+            assert 'Installing _km_' not in activity(), 'Cancelling module confirmation started installation'
+            print('PASS: bundled SNES module confirmation and cancellation', flush=True)
             keys('ctrl+o')
             picker = None
             for _ in range(50):
@@ -126,8 +148,8 @@ with tempfile.TemporaryDirectory(prefix='hakchi desktop ') as temporary:
             if options.screenshots:
                 command('import', '-window', picker, str(Path(options.screenshots) / 'desktop-file-picker.png'), env=env)
             command('xdotool', 'windowfocus', '--sync', picker, env=env)
-            rom = root / 'Third test game.nes'
-            rom.write_bytes(b'NES\x1a' + bytes(12) + bytes([3]) * 32768)
+            rom = root / 'Third test game.smc'
+            rom.write_bytes(bytes([3]) * 32768)
             geometry = dict(line.split('=', 1) for line in command('xdotool', 'getwindowgeometry', '--shell', picker, env=env).splitlines())
             width, height = int(geometry['WIDTH']), int(geometry['HEIGHT'])
             command('xdotool', 'mousemove', '--window', picker, '400', '22', 'click', '1', env=env)
@@ -157,6 +179,9 @@ with tempfile.TemporaryDirectory(prefix='hakchi desktop ') as temporary:
             wait_for('Third test game')
             listing = command(str(binary), 'game-list', str(library), env=env)
             assert len(listing.strip().splitlines()) == 3, 'The graphical import did not add a game to the library'
+            imported = next(line for line in listing.splitlines() if 'Third test game' in line)
+            assert '/bin/snes9x ' in imported, 'SNES import inherited the saved NES emulator'
+            assert json.loads(config.read_text())['Core'] == 'snes9x'
             screenshot('desktop-imported')
             print('PASS: graphical ROM selection, import settings, backend import and library refresh', flush=True)
         finally:

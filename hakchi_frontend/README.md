@@ -1,7 +1,20 @@
 # Hakchi Desktop for Linux
 
 The AppImage opens a native Avalonia window when launched without arguments.
-The compact dark frontend uses the existing Hakchi CLI for operations.
+The SNES desktop uses the existing Hakchi CLI for operations. Its dark purple
+theme, SNES controller and Super Famicom button colors identify the SNES profile.
+New settings default to `snes9x`; selecting `.sfc`/`.smc` ROMs selects it even when
+older preferences contain a NES emulator. Other saved libraries remain available.
+
+The maintainer confirms the SNES Mini workflow is fully working on a real console:
+stock Hakchi setup, RetroArch/Snes9x installation, game sync and game launch
+(10 October 2026). Automated tests validate the frontend and packaging separately.
+This report covers that workflow and console, not every game or model.
+
+The SNES theme and bundled emulator action require the current `mainline` build
+or its GitHub Actions artifact. The v0.3.0 download below predates these changes.
+
+![SNES desktop with a software-test library](screenshots/snes-desktop.png)
 
 Desktop v0.3.0 includes the stock SNES installer described below. Earlier
 releases predate it.
@@ -35,8 +48,9 @@ sudo apt install libx11-6 libice6 libsm6 libfontconfig1 openssh-client
 ## Prepare a library
 
 1. Choose a local library directory, or use the default under your XDG data directory.
-2. Select **Add games**, choose ROM files and enter the emulator command installed
-   on your console, such as `fceumm` or `snes9x`. A single game can have a custom name;
+2. Select **Add games** and choose `.sfc`/`.smc` ROM files. The SNES ROM filter and
+   `snes9x` command are selected by default. You can choose other ROM types and
+   installed emulator commands. A single game can have a custom name;
    multiple games use their filenames.
 3. Search the library and select a game to preview its artwork, ID and command.
    Importing and browsing work without a console. Duplicate or invalid inputs appear
@@ -70,7 +84,13 @@ the actual writable game path returned by the console before synchronizing.
 to menu `000`. Existing copies of those game IDs are replaced; other games and saves
 are preserved. The library search filters the view, not the synchronization set.
 
-**Install module** selects an `.hmod` file and confirms installation.
+**Install RetroArch + Snes9x** installs the bundled modules in that order, then
+checks their console launcher and core files. Set up Hakchi and save your backup
+first. Installation replaces these emulator files and default configuration;
+both package hashes are checked before connecting. Import SNES games with `snes9x`,
+synchronize, then launch a game on the console. See the [bundled module guide](../hakchi_cli/modules/README.md).
+
+**Install module** selects another `.hmod` file and confirms installation.
 **Save backup** retrieves a stock-kernel backup already held by compatible firmware;
 it does not create a stock backup from an unmodified console.
 
@@ -86,7 +106,8 @@ stock-model identification, explicit installation and post-install verification.
 The firmware and base modules are bundled in newly built AppImages. See the
 [stock console workflow](../hakchi_cli/README.md#if-the-console-is-stock-or-needs-first-time-installation)
 for connection details and the equivalent CLI commands. This installer accepts
-recognized stock SNES Mini/Super Famicom kernels only and is not hardware-validated.
+recognized stock SNES Mini/Super Famicom kernels only. The maintainer confirms
+installation on their SNES Mini.
 
 Backups default to `$XDG_DATA_HOME/hakchi/backups` or `~/.local/share/hakchi/backups`.
 Keep the backup directory for recovery. The dialog cannot close during an active
@@ -100,6 +121,7 @@ operation, and an SSH disconnect never counts as confirmed installation success.
 - `Ctrl+F`: search. `Ctrl+L`: edit the library location. `F5`: refresh.
 - `Ctrl+O`: add game ROMs.
 - `Ctrl+Shift+S`: set up a stock SNES Mini. `Escape` closes idle setup.
+- `Ctrl+Shift+M`: install bundled RetroArch/Snes9x modules.
 - `Ctrl+Shift+C`: copy Activity for troubleshooting.
 
 ## Terminal commands and source builds
@@ -133,8 +155,7 @@ AppImage entry point, reads a prepared library through the real CLI, exercises
 search/refresh and invalid-location recovery, imports a ROM through the file picker
 and settings dialog, and saves screenshots when requested.
 
-This remains experimental. Real console transfers, firmware/menu behavior, recovery
-boots and flashing need hardware validation. ARM64 is an unvalidated build target.
-The guided stock SNES installer is software-tested; first-time installation for
+The SNES Mini workflow has maintainer-confirmed hardware results. Other consoles,
+low-level flashing and ARM64 remain unvalidated. First-time installation for
 other console families, factory reset and storage expansion are not automated.
 This frontend does not provide full Windows GUI feature parity.
