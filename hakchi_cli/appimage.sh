@@ -87,6 +87,17 @@ download "https://github.com/AppImage/appimagetool/releases/download/1.9.1/appim
   "$work/appimagetool.AppImage" "$tool_sha"
 download "https://github.com/AppImage/type2-runtime/releases/download/20251108/runtime-$arch" \
   "$work/runtime" "$runtime_sha"
+# Bundle the same fixed firmware used by the Windows build, checked before it
+# enters the image. The runtime also checks this embedded release manifest.
+mapfile -t firmware_release < <(python3 - <<'PY'
+import json
+release = json.load(open('firmware.json'))
+print(release['url'])
+print(release['sha256'])
+PY
+)
+download "${firmware_release[0]}" "$appdir/usr/lib/hakchi/payloads/hakchi.hmod" "${firmware_release[1]}"
+cp firmware.json "$appdir/usr/share/doc/hakchi/firmware.json"
 chmod 755 "$work/appimagetool.AppImage"
 # Extract the packaging tool so building does not require FUSE or elevated privileges.
 (cd "$work" && ./appimagetool.AppImage --appimage-extract >/dev/null)

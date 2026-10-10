@@ -25,6 +25,8 @@ jobs:
         run: bash hakchi_cli/appimage.sh
       - name: Check USB packet parser
         run: dotnet run --project hakchi_cli/tests/ProtocolTests.csproj -c Release
+      - name: Check stock SNES installer without hardware
+        run: dotnet run --project hakchi_cli/tests/InstallerTests.csproj -c Release
       - name: Check frontend backend adapter
         run: dotnet run --project hakchi_frontend/tests/FrontendTests.csproj -c Release
       - name: Check packaged CLI and AppImage

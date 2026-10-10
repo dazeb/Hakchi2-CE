@@ -126,7 +126,7 @@ internal static class FelCommands
         catch (Exception ex) when (ex is FormatException or OverflowException) { throw new ArgumentException($"Invalid number: {value}"); }
     }
 
-    private static void ValidateBoot(byte[] boot, uint maximum)
+    internal static void ValidateBoot(byte[] boot, uint maximum)
     {
         if (boot.Length < 576 || System.Text.Encoding.ASCII.GetString(boot, 0, 8) != "ANDROID!") throw new ArgumentException("Invalid Android boot image.");
         uint Field(int offset) => System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(offset, 4));

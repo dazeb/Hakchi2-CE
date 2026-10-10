@@ -22,6 +22,11 @@ internal static class Program
       upload FILE /REMOTE/FILE        Upload a file
       download /REMOTE/FILE FILE      Download a file atomically
       backup FILE                     Download the console's stock kernel backup
+      firmware-download FILE          Download and verify the pinned Hakchi firmware
+      firmware-boot [--firmware FILE]  Boot stock-console recovery in RAM over USB FEL
+      firmware-check BACKUP_DIR       Identify a stock SNES and save a verified backup
+      firmware-install BACKUP_DIR --yes   Install using that backup and pinned firmware
+      firmware-verify BACKUP_DIR      Verify the installed system and retained stock backup
       mod-install MOD.hmod            Install a tar.gz hmod file or hmod directory
       mod-uninstall NAME              Uninstall a module
       game-add ROM LIBRARY --core CORE [--name NAME] [--icon PNG]
@@ -33,6 +38,8 @@ internal static class Program
       fel --help                      Show FEL options; --yes required for flash commands
 
     --timeout is in seconds and applies per connection/remote command. Ctrl-C cancels.
+    Firmware commands accept --firmware FILE; check/install/verify use --host
+    (default 169.254.13.37) over USB networking. Run check before install.
     Requires libusb-1.0; network commands also require OpenSSH. See hakchi_cli/README.md.
     """;
 
@@ -75,6 +82,8 @@ internal static class Program
             throw new ArgumentException("--host must be a hostname or IP address.");
         var command = args[index++];
         var tail = args[index..];
+        if (command.StartsWith("firmware-", StringComparison.Ordinal))
+            return FirmwareCommand(command, tail, host, port, timeout, cancellation);
         if (command == "game-add")
         {
             if (tail.Length < 4) throw new ArgumentException("game-add ROM LIBRARY --core CORE [--name NAME] [--icon PNG]");
@@ -166,6 +175,52 @@ internal static class Program
         usbConfigured = true;
         NativeLibrary.SetDllImportResolver(typeof(UsbDevice).Assembly, (name, assembly, path) =>
             name == "libusb-1.0" ? NativeLibrary.Load("libusb-1.0.so.0", assembly, path) : IntPtr.Zero);
+    }
+
+    private static int FirmwareCommand(string command, string[] args, string host, int port, int timeout, CancellationToken cancellation)
+    {
+        if (command == "firmware-download")
+        {
+            Require(args, 1);
+            FirmwarePackage.Download(args[0], cancellation);
+            return 0;
+        }
+        if (command is not ("firmware-boot" or "firmware-check" or "firmware-install" or "firmware-verify"))
+            throw new ArgumentException($"Unknown firmware command: {command}.");
+        var firmwarePath = FirmwarePackage.DefaultPath;
+        string directory = null;
+        var confirmed = false;
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] == "--firmware" && i + 1 < args.Length) firmwarePath = args[++i];
+            else if (args[i] == "--yes" && command == "firmware-install" && !confirmed) confirmed = true;
+            else if (!args[i].StartsWith("--", StringComparison.Ordinal) && command != "firmware-boot" && directory == null) directory = args[i];
+            else throw new ArgumentException($"Unknown or incomplete firmware option: {args[i]}");
+        }
+        if (command != "firmware-boot" && directory == null) throw new ArgumentException($"{command} requires a backup directory.");
+        if (command == "firmware-install" && !confirmed)
+            throw new ArgumentException("Installation writes console firmware. Run firmware-check, then add --yes when ready to install.");
+        var package = FirmwarePackage.Load(firmwarePath);
+        if (command == "firmware-boot")
+        {
+            InitUsb();
+            return package.BootRecovery(timeout, cancellation);
+        }
+        // Load all local payloads before opening a connection or changing recovery flags.
+        var modules = command == "firmware-install" ? FirmwarePackage.BaseModules() : null;
+        using var shell = new Shell(host ?? "169.254.13.37", port, timeout, cancellation);
+        var installer = new FirmwareInstaller(shell, package);
+        switch (command)
+        {
+            case "firmware-check":
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(installer.BackUp(directory)));
+                break;
+            case "firmware-install": installer.Install(directory, modules); break;
+            case "firmware-verify":
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(installer.Verify(directory)));
+                break;
+        }
+        return 0;
     }
 
     private static void Require(string[] args, int count)

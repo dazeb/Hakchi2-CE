@@ -37,6 +37,8 @@ public partial class MainWindow : Window
             else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.F) { SearchBox.Focus(); e.Handled = true; }
             else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.L) { LibraryPath.Focus(); e.Handled = true; }
             else if (!busy && e.KeyModifiers == KeyModifiers.Control && e.Key == Key.O) { ImportClick(this, new RoutedEventArgs()); e.Handled = true; }
+            else if (!busy && e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.S)
+            { InstallerClick(this, new RoutedEventArgs()); e.Handled = true; }
             else if (e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.C)
             { CopyClick(this, new RoutedEventArgs()); e.Handled = true; }
         }, RoutingStrategies.Tunnel);
@@ -303,6 +305,21 @@ public partial class MainWindow : Window
     {
         try { await Launcher.LaunchUriAsync(new Uri("https://github.com/dazeb/Hakchi2-CE/blob/mainline/hakchi_frontend/README.md")); }
         catch (Exception ex) { Log("Setup guide", ex.Message); }
+    }
+
+    private async void InstallerClick(object? sender, RoutedEventArgs e)
+    {
+        if (busy) return;
+        var installer = new InstallerWindow(backend, detail => Log("SNES setup", detail));
+        busy = true;
+        try { await installer.ShowDialog(this); }
+        finally { busy = false; }
+        if (installer.InstalledHost == null) return;
+        ConnectionType.SelectedIndex = 1;
+        HostBox.Text = installer.InstalledHost;
+        PortBox.Text = "22";
+        try { SaveSettings(); }
+        catch (Exception ex) { Log("Settings", ex.Message); }
     }
 
     private async void CopyClick(object? sender, RoutedEventArgs e)

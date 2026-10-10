@@ -94,6 +94,24 @@ with tempfile.TemporaryDirectory(prefix='hakchi desktop ') as temporary:
             assert process.poll() is None
             screenshot('desktop-recovered')
             print('PASS: search, invalid-location error and refresh recovery through the real window', flush=True)
+            keys('ctrl+shift+s')
+            setup = None
+            for _ in range(50):
+                found = subprocess.run(['xdotool', 'search', '--onlyvisible', '--name', '^Set up stock SNES Mini$'],
+                                       env=env, capture_output=True, text=True)
+                if found.returncode == 0:
+                    setup = found.stdout.splitlines()[0]
+                    break
+                time.sleep(0.1)
+            assert setup is not None, 'The stock SNES setup dialog did not open'
+            command('xdotool', 'windowfocus', '--sync', setup, env=env)
+            time.sleep(0.3)
+            if options.screenshots:
+                command('import', '-window', setup, str(Path(options.screenshots) / 'desktop-stock-setup.png'), env=env)
+            keys('Escape')
+            command('xdotool', 'windowfocus', '--sync', window, env=env)
+            assert process.poll() is None, 'Closing stock setup terminated the application'
+            print('PASS: stock SNES setup opens and closes without accessing a console', flush=True)
             keys('ctrl+o')
             picker = None
             for _ in range(50):

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Check bundle relocation, embedded permissions and actual native library loading."""
 import argparse
+import hashlib
+import json
 import os
 from pathlib import Path
 import shutil
@@ -83,6 +85,31 @@ class AppImageTests(unittest.TestCase):
         result = subprocess.run([str(self.appdir / 'AppRun'), '--help'], env=env, capture_output=True, timeout=15)
         self.assertEqual(result.returncode, 0)
         self.assertIn(b'game-add', result.stdout)
+
+    def test_stock_installer_has_pinned_firmware_and_base_modules(self):
+        manifest = json.loads((self.appdir / 'usr/share/doc/hakchi/firmware.json').read_text())
+        payload = self.appdir / 'usr/lib/hakchi/payloads'
+        self.assertEqual(hashlib.sha256((payload / 'hakchi.hmod').read_bytes()).hexdigest(), manifest['sha256'])
+        self.assertTrue((payload / 'base-modules/clovercon.hmod/install').is_file())
+        self.assertTrue((payload / 'base-modules/copyleft.hmod').is_dir())
+        result = subprocess.run([str(self.image), 'firmware-install', str(self.root / 'backup')],
+                                capture_output=True, timeout=15)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b'--yes', result.stderr)
+        self.assertFalse((self.root / 'backup').exists())
+        # The checked archive must also parse through the runtime loader. Stop
+        # at a fixture SSH adapter before any actual console can be contacted.
+        adapter = self.root / 'adapter'
+        adapter.mkdir()
+        ssh = adapter / 'ssh'
+        ssh.write_text("#!/bin/sh\nprintf 'fixture connection refused\\n' >&2\nexit 1\n")
+        ssh.chmod(0o755)
+        env = dict(os.environ, PATH=str(adapter) + os.pathsep + os.environ['PATH'])
+        result = subprocess.run([str(self.image), 'firmware-check', str(self.root / 'backup')],
+                                env=env, capture_output=True, timeout=15)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b'fixture connection refused', result.stderr)
+        self.assertFalse((self.root / 'backup').exists())
 
 
 if __name__ == '__main__':

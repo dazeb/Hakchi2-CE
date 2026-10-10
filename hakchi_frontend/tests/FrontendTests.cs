@@ -18,6 +18,13 @@ try
     Assert(!File.Exists(Path.Combine(root, "PWNED")), "An argument was executed by a shell");
     Console.WriteLine("PASS: backend arguments, streams, exit status and desktop SSH mode");
 
+    var lines = new System.Collections.Concurrent.ConcurrentBag<string>();
+    var streamed = await new Backend(helper).RunAsync(arguments, lines.Add);
+    Assert(streamed.ExitCode == result.ExitCode && streamed.Output == result.Output && streamed.Error == result.Error,
+        "Progress streaming lost output or exit status");
+    Assert(lines.Contains(result.Output.Trim()) && lines.Contains("1"), "Progress missed stdout or stderr");
+    Console.WriteLine("PASS: live progress preserves both streams and exit status");
+
     var games = GameEntry.Parse("CLV-Z-BBBBB\tZelda\t/bin/fceumm /var/games/b/game.nes\nCLV-Z-AAAAA\tDonkey Kong\t/bin/snes9x /var/games/a/game.sfc\n", root);
     Assert(games.Count == 2 && games[0].Name == "Donkey Kong", "Library parsing or sorting failed");
     Assert(games[1].Core == "fceumm" && games[0].Directory == Path.Combine(root, "CLV-Z-AAAAA"), "Game details lost their source path");

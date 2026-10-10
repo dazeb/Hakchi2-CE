@@ -3,7 +3,10 @@
 The AppImage opens a native Avalonia window when launched without arguments.
 The compact dark frontend uses the existing Hakchi CLI for operations.
 
-Download the [experimental desktop release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-desktop-v0.2.0)
+Desktop v0.3.0 includes the stock SNES installer described below. Earlier
+releases predate it.
+
+Download the [experimental desktop release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-desktop-v0.3.0)
 and its checksum, then run:
 
 ```sh
@@ -75,6 +78,20 @@ Operations show their output and errors in Activity. Controls are disabled while
 an operation runs, and the window waits for it to finish before closing. Remote
 commands use the CLI's 30-second timeout. Raw FEL flashing remains in the CLI.
 
+## Stock SNES setup
+
+**Set up stock SNES Mini** opens the first-installation dialog. It guides FEL
+recovery boot, USB networking/SSH approval, private original-kernel backup,
+stock-model identification, explicit installation and post-install verification.
+The firmware and base modules are bundled in newly built AppImages. See the
+[stock console workflow](../hakchi_cli/README.md#if-the-console-is-stock-or-needs-first-time-installation)
+for connection details and the equivalent CLI commands. This installer accepts
+recognized stock SNES Mini/Super Famicom kernels only and is not hardware-validated.
+
+Backups default to `$XDG_DATA_HOME/hakchi/backups` or `~/.local/share/hakchi/backups`.
+Keep the backup directory for recovery. The dialog cannot close during an active
+operation, and an SSH disconnect never counts as confirmed installation success.
+
 ## Settings and shortcuts
 
 - Library: `$XDG_DATA_HOME/hakchi/games`, or `~/.local/share/hakchi/games`.
@@ -82,6 +99,7 @@ commands use the CLI's 30-second timeout. Raw FEL flashing remains in the CLI.
 - Games, backups and preferences stay outside the AppImage; moving/updating it retains them.
 - `Ctrl+F`: search. `Ctrl+L`: edit the library location. `F5`: refresh.
 - `Ctrl+O`: add game ROMs.
+- `Ctrl+Shift+S`: set up a stock SNES Mini. `Escape` closes idle setup.
 - `Ctrl+Shift+C`: copy Activity for troubleshooting.
 
 ## Terminal commands and source builds
@@ -117,5 +135,6 @@ and settings dialog, and saves screenshots when requested.
 
 This remains experimental. Real console transfers, firmware/menu behavior, recovery
 boots and flashing need hardware validation. ARM64 is an unvalidated build target.
-First-time firmware installation, factory reset and storage expansion are not
-automated. This frontend does not provide full Windows GUI feature parity.
+The guided stock SNES installer is software-tested; first-time installation for
+other console families, factory reset and storage expansion are not automated.
+This frontend does not provide full Windows GUI feature parity.

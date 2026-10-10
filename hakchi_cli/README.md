@@ -2,7 +2,8 @@
 
 This CLI brings the reusable parts of Hakchi2 CE to a Linux terminal: prepare games,
 sync them to an already modified console, manage modules, transfer files, retrieve
-existing backups and use low-level FEL recovery commands.
+existing backups, install Hakchi on recognized stock SNES Mini/Super Famicom consoles
+and use low-level FEL recovery commands.
 
 The Windows GUI targets .NET Framework 4.8 and Windows Forms. The Linux CLI targets
 .NET 10 and compiles the existing FEL/clovershell sources, game metadata serializer
@@ -12,8 +13,9 @@ and Windows driver installers are not required to run it.
 
 **Current status:** Linux x64 builds and software checks pass. Real console transfers,
 menu behavior, recovery boots and flashing still need hardware validation. This is
-not full feature parity with the Windows GUI. First-time firmware installation,
-storage expansion and factory reset are not automated.
+not full feature parity with the Windows GUI. The stock SNES installer has software
+tests but has not yet been validated on real hardware. Storage expansion and factory
+reset are not automated.
 
 ## Contents
 
@@ -72,13 +74,13 @@ every native operating-system dependency.
 ### AppImage
 
 Download the x86-64 AppImage and checksum from the
-[experimental Linux desktop v0.2.0 release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-desktop-v0.2.0).
+[experimental Linux desktop v0.3.0 release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-desktop-v0.3.0).
 It is built on Debian 12 and includes a matching source archive with the FEL submodule.
 ARM64 remains an unvalidated build target; this release provides x86-64 only.
 
 ```sh
-curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.2.0/hakchi-linux-x64.AppImage
-curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.2.0/hakchi-linux-x64.AppImage.sha256
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.3.0/hakchi-linux-x64.AppImage
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.3.0/hakchi-linux-x64.AppImage.sha256
 sha256sum -c hakchi-linux-x64.AppImage.sha256
 ```
 
@@ -152,8 +154,9 @@ The `Experimental Linux Desktop AppImage` GitHub Actions workflow builds x64 on 
 22.04, runs software checks and uploads the AppImage/checksum as a workflow artifact.
 It does not publish a release. Local build outputs are ignored by Git. When sharing
 a binary, also provide its matching source and submodule revisions under the existing
-licenses. AppImage packaging does not automate first-time firmware installation or
-replace real NES/SNES Classic validation.
+licenses. New AppImages bundle the SHA-256-pinned Hakchi 1.0.4-126 firmware used by
+the Windows build and the repository's base modules. The v0.2.0 desktop release
+predates the stock installer. Packaging does not replace real-console validation.
 
 ### Build from source
 
@@ -307,15 +310,78 @@ external storage and separate game storage settings affect the correct destinati
 
 ### If the console is stock or needs first-time installation
 
-The CLI does not provide an automated first-time installer. `backup` calls
-`hakchi getBackup2` on an already running, modified firmware; it cannot obtain an
-original backup from a stock console by itself.
+New builds provide a guided stock **SNES Mini/Super Famicom** installation flow.
+It uses the same fixed Hakchi 1.0.4-126 `.hmod` as the Windows build, with its
+SHA-256 pinned in `firmware.json`. Only the known stock kernels listed in the Windows
+installer are accepted. NES, modified consoles and unknown kernels are rejected.
+This flow is software-tested; real hardware flashing still needs validation.
 
-Use a separate, model-appropriate installation/recovery procedure that creates and
-retains the original backup. The existing Windows workflow is described in
-`hakchi_gui/README.md` in the source tree. This CLI exposes raw FEL operations for
-experienced users, but it does not determine a safe flash layout or assemble an
-installation plan. A RAM recovery boot does not install firmware.
+1. Switch the console off and connect a USB **data** cable. Hold RESET, switch
+   POWER on, wait about three seconds and release RESET. The LED remains off in FEL.
+   Ensure the udev rule above permits access, then boot the recovery image into RAM:
+
+   ```sh
+   hakchi --timeout 120 firmware-boot
+   ```
+
+2. Recovery enables **USB Ethernet/RNDIS and SSH**, rather than clovershell. Set the
+   new USB network adapter's IPv4 method to **Link-Local Only** in Linux network
+   settings. Its normal console address is `169.254.13.37`. Connect once in a terminal
+   to approve the console's SSH host key; the root account has no password:
+
+   ```sh
+   ssh root@169.254.13.37
+   # Exit the remote shell once the connection is approved.
+   ```
+
+3. Read and identify the stock kernel, save a private local backup and verify its
+   checksum. Use a separate directory for each console:
+
+   ```sh
+   hakchi --host 169.254.13.37 --timeout 180 firmware-check ./snes-backup
+   (cd snes-backup && sha256sum -c stock-kernel.img.sha256)
+   ```
+
+   This saves `stock-kernel.img`, its SHA-256 file and `installation.json`. An existing
+   different backup is never overwritten. Nothing is installed at this stage.
+
+4. Check the detected console model and retained backup, then explicitly install:
+
+   ```sh
+   hakchi --host 169.254.13.37 --timeout 180 firmware-install ./snes-backup --yes
+   ```
+
+   The installer verifies the local backup and re-reads the connected console's
+   stock kernel and hardware identity before proceeding. It stages and checks firmware/base-module uploads
+   in RAM, then hands off to the upstream recovery `boot` workflow. It does not use
+   hard-coded raw NAND writes or automatically grow partitions. Keep USB and power
+   connected until the menu appears. A disconnect is **not** reported as verified
+   installation success.
+
+5. Verify the running installed system, boot images stored in flash, hardware identity
+   and preserved original-kernel backup:
+
+   ```sh
+   hakchi --host 169.254.13.37 --timeout 180 firmware-verify ./snes-backup
+   ```
+
+   The installed system may present a new SSH host key after reboot. If OpenSSH
+   reports a mismatch, confirm you are connected to the same console, remove only
+   its previous entry with `ssh-keygen -R 169.254.13.37` and approve the replacement
+   using `ssh root@169.254.13.37`. The CLI preserves normal OpenSSH verification;
+   the desktop never accepts a key invisibly.
+
+For a source-only published CLI, download the checked firmware to a new file with
+`hakchi firmware-download ./hakchi.hmod`, then append `--firmware ./hakchi.hmod` to
+each boot/check/install/verify command. A newly packaged AppImage includes it already.
+The desktop **Set up stock SNES Mini** dialog guides the same steps and streams
+their output. Other models and consoles modified by older Hakchi versions require a
+separate installation/recovery procedure.
+
+Keep the backup outside the AppImage. The ordinary `backup` command retrieves an
+already stored backup; it does not boot recovery from a stock console by itself.
+Firmware installation enables modification, but new games still need a compatible
+installed emulator. This port does not convert SNES ROMs into Canoe SFROM files.
 
 ## Command reference
 
@@ -331,6 +397,11 @@ the Linux host. Quote paths and names containing spaces.
 | `upload FILE /REMOTE/FILE` | Write a local file to the console; overwrite its destination directly |
 | `download /REMOTE/FILE FILE` | Download a nonempty file; atomically replace local destination after success |
 | `backup FILE` | Download the existing stock-kernel backup through `hakchi getBackup2` |
+| `firmware-download FILE` | Download and verify the pinned firmware to a new file |
+| `firmware-boot [--firmware FILE]` | Boot pinned recovery into RAM over FEL |
+| `firmware-check BACKUP_DIR` | Identify a stock SNES and hardware ID; save and verify a private backup |
+| `firmware-install BACKUP_DIR --yes` | Recheck the same console and backup, then install through upstream recovery |
+| `firmware-verify BACKUP_DIR` | Verify the installed system, persistent boot images, hardware ID and retained backup |
 | `mod-install MOD.hmod` | Install a gzip-tar module archive or an unpacked `.hmod` directory |
 | `mod-uninstall NAME` | Ask the firmware to uninstall a module by its installed name |
 | `game-add ROM LIBRARY --core CORE [--name NAME] [--icon PNG]` | Prepare a game locally |
@@ -609,7 +680,7 @@ address regardless of the requested write destination. Vendored submodule source
 unchanged by this port.
 
 Features requiring substantial GUI orchestration or extra tools were left out:
-first-time installation, factory reset, storage expansion, SFROM conversion, automatic
+first-time installation for other console families, factory reset, storage expansion, SFROM conversion, automatic
 patches/metadata/artwork, folder generation and dedicated save import/export. The goal
 is a small terminal adapter around existing code, with those limits explicit.
 
@@ -620,6 +691,7 @@ From the repository root, after building:
 ```sh
 python3 hakchi_cli/tests/test_cli.py --binary hakchi_cli/bin/publish/linux-x64/hakchi
 dotnet run --project hakchi_cli/tests/ProtocolTests.csproj -c Release
+dotnet run --project hakchi_cli/tests/InstallerTests.csproj -c Release
 git diff --check
 ```
 
@@ -636,6 +708,8 @@ APPIMAGE_EXTRACT_AND_RUN=1 python3 hakchi_cli/tests/test_appimage.py \
 The packaging checks cover moving/renaming the AppImage, relative game paths,
 bundled icon lookup, USB rule output, desktop metadata, license files and native
 USB enumeration using the bundled libraries. They do not require a console.
+The installer fixtures check backup integrity, console identity, upload verification,
+failure handling and persistent boot verification without exposing real hardware.
 
 The CLI suite has 12 tests. Its fixture replaces `ssh` with an adapter that runs real
 local shell/tar/file operations. It checks argument/FEL validation, game metadata,

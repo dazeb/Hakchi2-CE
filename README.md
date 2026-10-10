@@ -12,7 +12,7 @@ The [original Windows documentation](hakchi_gui/README.md) describes the GUI.
 
 ## Download and run on Linux
 
-The [experimental Linux desktop v0.2.0 release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-desktop-v0.2.0)
+The [experimental Linux desktop v0.3.0 release](https://github.com/dazeb/Hakchi2-CE/releases/tag/linux-desktop-v0.3.0)
 provides a single-file **x86-64 AppImage**, its SHA-256 checksum and a source archive
 including the FEL submodule. The AppImage includes .NET, USB libraries, CLI payloads,
 Avalonia frontend, the setup guides and license notices. Opening it without arguments
@@ -21,8 +21,8 @@ launches the compact dark GUI; explicit command arguments run the CLI.
 Download and verify it before running:
 
 ```sh
-curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.2.0/hakchi-linux-x64.AppImage
-curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.2.0/hakchi-linux-x64.AppImage.sha256
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.3.0/hakchi-linux-x64.AppImage
+curl -fLO https://github.com/dazeb/Hakchi2-CE/releases/download/linux-desktop-v0.3.0/hakchi-linux-x64.AppImage.sha256
 sha256sum -c hakchi-linux-x64.AppImage.sha256
 chmod +x hakchi-linux-x64.AppImage
 ./hakchi-linux-x64.AppImage
@@ -38,6 +38,9 @@ For USB permissions, connection setup and build instructions, see the
 
 ## Recent changes
 
+- Added a guided stock SNES Mini/Super Famicom installer with pinned firmware,
+  original-kernel backup checks and separate post-install verification. This requires
+  the v0.3.0 AppImage; older releases predate the installer.
 - Added a native compact dark frontend with game import, search and artwork preview,
   connection settings, status checks, library sync, module installation and backup saving.
 - The AppImage now opens a GUI by default, with desktop integration and settings
@@ -77,6 +80,7 @@ operations remain available through the CLI below.
 | Task | Commands | Requirements |
 | --- | --- | --- |
 | Prepare and inspect games | `game-add`, `game-list` | Local ROM files; no console needed |
+| Install on a stock SNES Mini | `firmware-boot`, `firmware-check`, `firmware-install`, `firmware-verify` | FEL, then USB networking/SSH and a recognized stock kernel |
 | Check firmware and storage | `status` | Running hakchi firmware with a working shell |
 | Upload games to menu `000` | `sync` | Writable game storage and installed emulator commands |
 | Manage console modules | `mod-install`, `mod-uninstall` | Compatible `.hmod` modules and a working shell |
@@ -91,8 +95,9 @@ extracted-package checks have
 passed. Transfers, menu behavior, recovery boots and flashing have not been validated
 on a real NES/SNES Classic in this work. ARM64 is a build target, not a tested release.
 
-The CLI does not automate first-time firmware installation, storage expansion or
-factory reset. It also omits Canoe SFROM conversion, automatic game patches, artwork
+The stock installer is limited to recognized SNES Mini/Super Famicom kernels and has
+software validation only. Storage expansion and factory reset are not automated.
+The CLI also omits Canoe SFROM conversion, automatic game patches, artwork
 search, database enrichment and custom folder generation. The Windows feature list
 does not describe the Linux CLI's capabilities.
 
@@ -119,9 +124,12 @@ retrieve any existing backup, check the installed emulator and select its actual
 storage path before syncing. Follow the
 [first-use workflow](hakchi_cli/README.md#first-use-workflow) for those steps.
 
-A stock console requires a separate, model-appropriate first-time installation
-procedure. `backup` cannot obtain a stock backup from an unmodified console, and a
-recovery RAM boot does not install firmware.
+For a stock SNES Mini, use **Set up stock SNES Mini** in a newly built desktop
+AppImage, or follow the [stock installation workflow](hakchi_cli/README.md#if-the-console-is-stock-or-needs-first-time-installation).
+The installer boots recovery in RAM, saves and checks the original kernel, stages
+the released Hakchi firmware and base modules, then verifies the installed system.
+Recovery boot alone does not install firmware. Other console models need a separate
+model-appropriate installation procedure.
 
 ## How it works and how to contribute
 

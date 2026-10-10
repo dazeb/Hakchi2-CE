@@ -15,7 +15,7 @@ public sealed class Backend
     public Backend(string? executable = null) => this.executable = executable ??
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "hakchi", "hakchi"));
 
-    public async Task<CommandResult> RunAsync(IEnumerable<string> arguments)
+    public async Task<CommandResult> RunAsync(IEnumerable<string> arguments, Action<string>? progress = null)
     {
         var start = new ProcessStartInfo(executable)
         {
@@ -28,10 +28,22 @@ public sealed class Backend
         start.Environment["HAKCHI_NONINTERACTIVE"] = "1";
         using var process = Process.Start(start) ?? throw new IOException("Could not start the Hakchi backend.");
         process.StandardInput.Close();
-        var output = process.StandardOutput.ReadToEndAsync();
-        var error = process.StandardError.ReadToEndAsync();
+        var output = ReadAsync(process.StandardOutput, progress);
+        var error = ReadAsync(process.StandardError, progress);
         await process.WaitForExitAsync();
         return new CommandResult(process.ExitCode, await output, await error);
+    }
+
+    private static async Task<string> ReadAsync(StreamReader reader, Action<string>? progress)
+    {
+        if (progress == null) return await reader.ReadToEndAsync();
+        var text = new System.Text.StringBuilder();
+        while (await reader.ReadLineAsync() is { } line)
+        {
+            text.AppendLine(line);
+            progress(line);
+        }
+        return text.ToString();
     }
 }
 
@@ -56,6 +68,7 @@ public sealed class Preferences
     public string Core { get; set; } = "fceumm";
 
     public static string FilePath => Path.Combine(Xdg("XDG_CONFIG_HOME", ".config"), "hakchi", "preferences.json");
+    public static string BackupRoot => Path.Combine(Xdg("XDG_DATA_HOME", ".local/share"), "hakchi", "backups");
     private static string Xdg(string variable, string fallback)
     {
         var value = Environment.GetEnvironmentVariable(variable);

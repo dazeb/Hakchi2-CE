@@ -75,6 +75,7 @@
           </Border>
           <StackPanel x:Name="ConnectionPanel" Spacing="8">
             <TextBlock Text="Console connection" FontSize="18" FontWeight="SemiBold" />
+            <Button Content="Set up stock SNES Mini" HorizontalAlignment="Stretch" Click="InstallerClick" />
             <ComboBox x:Name="ConnectionType" SelectedIndex="0" HorizontalAlignment="Stretch" AutomationProperties.Name="Connection type">
               <ComboBoxItem Content="USB clovershell" />
               <ComboBoxItem Content="SSH / network" />
@@ -95,7 +96,7 @@
               <Button Content="Install module" HorizontalAlignment="Stretch" Click="ModuleClick" />
               <Button Grid.Column="1" Content="Save backup" HorizontalAlignment="Stretch" Click="BackupClick" />
             </Grid>
-            <TextBlock Text="For consoles already running compatible hakchi firmware. Initial firmware installation and raw flashing use separate workflows."
+            <TextBlock Text="Use stock SNES setup for first installation. Existing compatible hakchi consoles can connect directly."
                        Classes="secondary" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" />
           </StackPanel>
         </StackPanel>

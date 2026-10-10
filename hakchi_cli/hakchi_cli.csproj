@@ -9,6 +9,10 @@
     <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="firmware.json" LogicalName="HakchiCli.firmware.json" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>InstallerTests</_Parameter1>
+    </AssemblyAttribute>
     <Compile Remove="tests/**/*.cs" />
     <PackageReference Include="LibUsbDotNet" Version="2.2.29" />
     <Compile Include="../Libraries/FelLib/FelLib/**/*.cs" Exclude="../Libraries/FelLib/FelLib/obj/**/*.cs;../Libraries/FelLib/FelLib/bin/**/*.cs" Link="Shared/FelLib/%(RecursiveDir)%(Filename)%(Extension)" />
@@ -20,6 +24,7 @@
     <Compile Include="../hakchi_gui/Apps/CoreCommands.cs" Link="Shared/CoreCommands.cs" />
     <None Include="../hakchi_gui/data/fes1.bin" Link="payloads/fes1.bin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="../hakchi_gui/images/blank_app.png" Link="payloads/blank_app.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="../hakchi_gui/mods/hmods/**/*" Link="payloads/base-modules/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="../LICENSE" Link="LICENSE" CopyToPublishDirectory="PreserveNewest" />
     <None Update="README.md;70-hakchi.rules" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>

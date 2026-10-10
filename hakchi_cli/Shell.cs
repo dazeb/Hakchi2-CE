@@ -5,7 +5,7 @@ using com.clusterrr.clovershell;
 namespace HakchiCli;
 
 // Keep network authentication, host-key checking and keys in standard OpenSSH.
-internal sealed class Shell : IDisposable
+internal sealed class Shell : IDisposable, IInstallShell
 {
     private readonly ClovershellConnection usb;
     private readonly string host;
