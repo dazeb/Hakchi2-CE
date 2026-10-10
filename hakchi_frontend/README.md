@@ -11,8 +11,8 @@ stock Hakchi setup, RetroArch/Snes9x installation, game sync and game launch
 (10 October 2026). Automated tests validate the frontend and packaging separately.
 This report covers that workflow and console, not every game or model.
 
-The SNES theme and bundled emulator action require the current `mainline` build
-or its GitHub Actions artifact. The v0.3.0 download below predates these changes.
+The SNES theme and bundled emulator action require a build of current `mainline`
+source. The v0.3.0 download below predates these changes.
 
 ![SNES desktop with a software-test library](screenshots/snes-desktop.png)
 

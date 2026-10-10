@@ -8,8 +8,8 @@ workflow, not every console model, ROM or Windows feature.
 
 Current `mainline` builds open with a SNES theme, default to Snes9x and include
 pinned RetroArch/Snes9x modules with an **Install RetroArch + Snes9x** action.
-Build the current source or use its GitHub Actions AppImage artifact for these
-changes; the older v0.3.0 download below predates them.
+Build the current source for these changes; the older v0.3.0 download below
+predates them.
 
 Manage a NES/SNES Classic from a native Linux desktop or terminal using the existing
 Hakchi USB/FEL code, game metadata format and emulator command mappings. The Windows
@@ -160,7 +160,7 @@ See [implementation details](hakchi_cli/README.md#how-the-cli-works) and
 [verification](hakchi_cli/README.md#verification-and-contributing) before changing it.
 Local build outputs are ignored by Git. Downloadable packages are published on this
 fork's [Releases page](https://github.com/dazeb/Hakchi2-CE/releases); the Linux
-packaging workflow also provides AppImage/checksum artifacts for its checked builds.
+packaging workflow defines the AppImage build, checksum and verification steps.
 
 ## Credits and license
 
